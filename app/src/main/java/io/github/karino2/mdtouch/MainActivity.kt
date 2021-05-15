@@ -25,10 +25,7 @@ import androidx.compose.ui.unit.dp
 import io.github.karino2.mdtouch.ui.theme.MDTouchTheme
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
-import org.intellij.markdown.ast.ASTNode
-import org.intellij.markdown.ast.CompositeASTNode
-import org.intellij.markdown.ast.LeafASTNode
-import org.intellij.markdown.ast.getTextInNode
+import org.intellij.markdown.ast.*
 import org.intellij.markdown.ast.impl.ListCompositeNode
 import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import org.intellij.markdown.html.HtmlGenerator
@@ -50,10 +47,9 @@ class MainActivity : ComponentActivity() {
 }
 
 val md2 = """
-```
-code
-block
-```
+3. hogehoge
+4. ikaika
+5. fugafuga
 """
 
 val md = """
@@ -66,6 +62,16 @@ brabra
    - fugafuga`tako`gyogyo
 
 after
+
+5. five
+6. six
+7. seven
+
+aaa
+
+1. hoge
+1. ika
+1. fuga
 
 ```
 code
@@ -209,6 +215,10 @@ fun RenderBlock(md: String, block: ASTNode, isTopLevel: Boolean = false) {
         MarkdownElementTypes.UNORDERED_LIST -> {
             RenderUnorderedList(md, block as ListCompositeNode, isTopLevel)
         }
+        MarkdownElementTypes.ORDERED_LIST -> {
+            RenderOrderedList(md, block as ListCompositeNode, isTopLevel)
+        }
+
         MarkdownElementTypes.CODE_FENCE -> {
             RenderCodeFence(md, block)
         }
@@ -260,15 +270,26 @@ fun RenderCodeFence(md: String, node: ASTNode) {
     }
 }
 
+
+@Composable
+inline fun RenderListColumn(
+    isTopLevel: Boolean,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column ( Modifier.offset(x = if (isTopLevel) 5.dp else 10.dp)
+        .padding(bottom = if (isTopLevel) 5.dp else 0.dp)) { content() }
+}
+
 @Composable
 fun RenderUnorderedList(md: String, list: ListCompositeNode, isTopLevel: Boolean) {
-    val offset = if(isTopLevel) 0.dp else 15.dp
-    Column ( Modifier.offset(x = offset) ) {
+    RenderListColumn(isTopLevel) {
         list.children.forEach { item->
             if (item.type == MarkdownElementTypes.LIST_ITEM) {
                 Row {
-                    Canvas(modifier = Modifier.size(30.dp)) {
-                        drawCircle(radius=size.width/8, center=center, color= Color.Black) }
+                    Canvas(modifier = Modifier.size(10.dp)
+                        .offset(y=7.dp)
+                        .padding(end=5.dp)) {
+                        drawCircle(radius=size.width/2, center=center, color= Color.Black) }
                     Box {
                         Column {
                             RenderBlocks(md, item as CompositeASTNode)
@@ -280,4 +301,43 @@ fun RenderUnorderedList(md: String, list: ListCompositeNode, isTopLevel: Boolean
         }
 
     }
+}
+
+@Composable
+fun RenderOrderedList(md: String, list: ListCompositeNode, isTopLevel: Boolean) {
+    RenderListColumn(isTopLevel){
+        val items = list.children
+            .filter { it.type == MarkdownElementTypes.LIST_ITEM }
+
+        val heads = items.runningFold(0) { aggr, item ->
+                if (aggr == 0)
+                {
+                    item.findChildOfType(MarkdownTokenTypes.LIST_NUMBER)
+                        ?.getTextInNode(md)?.toString()?.trim()?.let {
+                            val number = it.substring(0, it.length - 1).trimStart('0')
+                            if (number.isEmpty()) 0 else number.toInt()
+                        } ?: 1
+                }
+                else
+                {
+                    aggr+1
+                }
+            }.drop(1)
+
+        heads.zip(items)
+            .forEach {(head, item) ->
+                val mark = "${head}."
+                Row {
+                    Box(Modifier.padding(end=5.dp)) {
+                        Text(mark)
+                    }
+                    Box {
+                        Column {
+                            RenderBlocks(md, item as CompositeASTNode)
+                        }
+                    }
+                }
+            }
+    }
+
 }
