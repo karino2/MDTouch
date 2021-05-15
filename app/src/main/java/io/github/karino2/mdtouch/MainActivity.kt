@@ -20,6 +20,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.karino2.mdtouch.ui.theme.MDTouchTheme
 import org.intellij.markdown.MarkdownElementTypes
@@ -103,26 +104,26 @@ fun RenderMd(md: String){
 fun RenderMarkdown(md: String, root: ASTNode) {
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         if (root is CompositeASTNode) {
-            RenderBlocks(md, root)
+            RenderBlocks(md, root, true)
         }
     }
 }
 
 @Composable
-fun RenderBlocks(md: String, blocks: CompositeASTNode) {
-    blocks.children.forEach { RenderBlock(md, it) }
+fun RenderBlocks(md: String, blocks: CompositeASTNode, isTopLevel: Boolean = false) {
+    blocks.children.forEach { RenderBlock(md, it, isTopLevel) }
 }
 
 @Composable
-fun RenderBox(content: AnnotatedString, style: TextStyle=LocalTextStyle.current) {
-    Box { Text(content,  style=style) }
+fun RenderBox(content: AnnotatedString, paddingBottom: Dp, style: TextStyle=LocalTextStyle.current) {
+    Box(Modifier.padding(bottom=paddingBottom)) { Text(content,  style=style) }
 }
 
 @Composable
 fun RenderHeading(md: String, block: CompositeASTNode, style: TextStyle) {
     RenderBox(buildAnnotatedString {
                block.children.forEach { appendHeadingContent(md, it) }
-            }, style)
+            }, 0.dp, style)
 }
 
 fun AnnotatedString.Builder.appendHeadingContent(md: String, node : ASTNode){
@@ -180,7 +181,7 @@ fun AnnotatedString.Builder.appendTrimmingInline(md: String, node : ASTNode){
 }
 
 @Composable
-fun RenderBlock(md: String, block: ASTNode) {
+fun RenderBlock(md: String, block: ASTNode, isTopLevel: Boolean = false) {
     when(block.type) {
         MarkdownElementTypes.ATX_1 -> {
             RenderHeading(md, block as CompositeASTNode, MaterialTheme.typography.h1)
@@ -203,10 +204,10 @@ fun RenderBlock(md: String, block: ASTNode) {
         MarkdownElementTypes.PARAGRAPH -> {
             RenderBox(buildAnnotatedString {
                 appendTrimmingInline(md, block)
-            })
+            }, if (isTopLevel) 8.dp else 0.dp)
         }
         MarkdownElementTypes.UNORDERED_LIST -> {
-            RenderUnorderedList(md, block as ListCompositeNode)
+            RenderUnorderedList(md, block as ListCompositeNode, isTopLevel)
         }
         MarkdownElementTypes.CODE_FENCE -> {
             RenderCodeFence(md, block)
@@ -260,8 +261,9 @@ fun RenderCodeFence(md: String, node: ASTNode) {
 }
 
 @Composable
-fun RenderUnorderedList(md: String, list: ListCompositeNode) {
-    Column ( Modifier.offset(x = 15.dp) ) {
+fun RenderUnorderedList(md: String, list: ListCompositeNode, isTopLevel: Boolean) {
+    val offset = if(isTopLevel) 0.dp else 15.dp
+    Column ( Modifier.offset(x = offset) ) {
         list.children.forEach { item->
             if (item.type == MarkdownElementTypes.LIST_ITEM) {
                 Row {
