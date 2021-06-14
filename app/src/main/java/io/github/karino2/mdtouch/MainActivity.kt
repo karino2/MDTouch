@@ -5,8 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import io.github.karino2.mdtouch.ui.RenderMd
+import io.github.karino2.mdtouch.ui.RenderTopLevelBlocks
+import io.github.karino2.mdtouch.ui.defaultRenderer
 import io.github.karino2.mdtouch.ui.theme.MDTouchTheme
+import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import org.intellij.markdown.html.HtmlGenerator
 import org.intellij.markdown.parser.MarkdownParser
@@ -15,11 +17,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PrintHtml(md)
+
+        val parser = Parser()
+        val parseFun : (block:String) -> ASTNode = { parser.parseBlock(it) }
+        val renderer = defaultRenderer()
+        val blocks = parser.splitBlocks(md)
+
+
+
         setContent {
             MDTouchTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
-                    RenderMd(md)
+                    RenderTopLevelBlocks(blocks, parseFun, renderer)
                 }
             }
         }

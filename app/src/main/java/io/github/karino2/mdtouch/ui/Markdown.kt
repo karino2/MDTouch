@@ -22,16 +22,14 @@ import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
 import org.intellij.markdown.ast.*
 import org.intellij.markdown.ast.impl.ListCompositeNode
-import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
-import org.intellij.markdown.parser.MarkdownParser
 
 
-// fun RenderHeading(md: String, block: CompositeASTNode, style: TextStyle) {
 data class MarkdownRenderer(
     val renderBlock:@Composable (ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) -> Unit,
     val renderHeading:@Composable (ctx: RenderContext, block: CompositeASTNode, style: TextStyle) -> Unit
-                            )
+)
 
+// src is topLevelBlock.
 data class RenderContext(val src: String, val renderer: MarkdownRenderer)
 
 fun defaultRenderer() = MarkdownRenderer(
@@ -51,26 +49,20 @@ fun defaultRenderer() = MarkdownRenderer(
     }
 )
 
-
 @Composable
-fun RenderMd(md: String){
-    val flavour = GFMFlavourDescriptor()
-    val parser = MarkdownParser(flavour)
-
-    val renderer = defaultRenderer()
-    val ctx = RenderContext(md, renderer)
-
-    val tree = parser.buildMarkdownTreeFromString(md)
-    RenderMarkdown(ctx, tree)
+fun RenderTopLevelBlocks(blocks: List<String>, parseFun: (block:String)->ASTNode, renderer: MarkdownRenderer){
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        blocks.forEach {
+            RenderTopLevelBlock(it, parseFun, renderer)
+        }
+    }
 }
 
 @Composable
-fun RenderMarkdown(ctx: RenderContext, root: ASTNode) {
-    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-        if (root is CompositeASTNode) {
-            RenderBlocks(ctx, root, true)
-        }
-    }
+fun RenderTopLevelBlock(block: String, parseFun: (block:String)->ASTNode, renderer: MarkdownRenderer) {
+    val node = parseFun(block)
+    val ctx = RenderContext(block, renderer)
+    ctx.renderer.renderBlock(ctx, node, true)
 }
 
 @Composable
@@ -190,7 +182,9 @@ fun DefaultRenderBlock(ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) 
 // similar to CodeFenceGeneratingProvider at GeneratingProviders.kt
 @Composable
 fun RenderCodeFence(md: String, node: ASTNode) {
-    Column (modifier = Modifier.background(Color.LightGray).padding(8.dp)) {
+    Column (modifier = Modifier
+        .background(Color.LightGray)
+        .padding(8.dp)) {
         val codeStyle = TextStyle(fontFamily = FontFamily.Monospace)
         val builder = StringBuilder()
 
@@ -237,8 +231,10 @@ inline fun RenderListColumn(
     isTopLevel: Boolean,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column ( Modifier.offset(x = if (isTopLevel) 5.dp else 10.dp)
-        .padding(bottom = if (isTopLevel) 5.dp else 0.dp)) { content() }
+    Column (
+        Modifier
+            .offset(x = if (isTopLevel) 5.dp else 10.dp)
+            .padding(bottom = if (isTopLevel) 5.dp else 0.dp)) { content() }
 }
 
 @Composable
@@ -247,9 +243,10 @@ fun RenderUnorderedList(ctx:RenderContext, list: ListCompositeNode, isTopLevel: 
         list.children.forEach { item->
             if (item.type == MarkdownElementTypes.LIST_ITEM) {
                 Row {
-                    Canvas(modifier = Modifier.size(10.dp)
-                        .offset(y=7.dp)
-                        .padding(end=5.dp)) {
+                    Canvas(modifier = Modifier
+                        .size(10.dp)
+                        .offset(y = 7.dp)
+                        .padding(end = 5.dp)) {
                         drawCircle(radius=size.width/2, center=center, color= Color.Black) }
                     Box {
                         Column {
