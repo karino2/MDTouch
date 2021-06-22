@@ -37,9 +37,8 @@ class MainActivity : ComponentActivity() {
 }
 
 val md2 = """
-3. hogehoge
-4. ikaika
-5. fugafuga
+hogehoge
+ikaika
 """
 
 val md = """

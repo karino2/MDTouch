@@ -171,18 +171,28 @@ fun selectTrimmingInline(node: ASTNode) : List<ASTNode> {
 }
 
 
+
 fun AnnotatedString.Builder.appendInline(md: String, node : ASTNode, childrenSelector : (ASTNode)->List<ASTNode>){
     val targets = childrenSelector(node)
-    targets.forEach {
-        if(it is LeafASTNode) {
-            append(it.getTextInNode(md).toString())
+    targets.forEachIndexed { index, child->
+        if(child is LeafASTNode) {
+            when(child.type) {
+                MarkdownTokenTypes.EOL -> {
+                    // treat as space, except the case of BR EOL
+                    if (index != 0 && targets[index-1].type !=MarkdownTokenTypes.HARD_LINE_BREAK)
+                        append(" ")
+                }
+                MarkdownTokenTypes.HARD_LINE_BREAK -> append("\n")
+                else -> append(child.getTextInNode(md).toString())
+            }
+
         } else {
-            when(it.type) {
+            when(child.type) {
                 MarkdownElementTypes.CODE_SPAN -> {
                     // val bgcolor = Color(0xFFF5F5F5)
                     val bgcolor =  Color.LightGray
                     pushStyle(SpanStyle(color= Color.Red, background = bgcolor))
-                    it.children.subList(1, it.children.size-1).forEach { item->
+                    child.children.subList(1, child.children.size-1).forEach { item->
                         append(item.getTextInNode(md).toString())
                     }
                     pop()
