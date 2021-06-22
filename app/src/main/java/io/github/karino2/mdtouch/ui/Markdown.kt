@@ -17,6 +17,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.karino2.mdtouch.Block
+import io.github.karino2.mdtouch.appendTail
 import io.github.karino2.mdtouch.ui.theme.Teal200
 import io.github.karino2.mdtouch.update
 import org.intellij.markdown.MarkdownElementTypes
@@ -76,25 +77,39 @@ fun RenderTopLevelBlocks(blocks: List<Block>, parseFun: (block:String)->ASTNode,
                 )
             }
         }
+        if (openState.value.all{ !it }) {
+            RenderEditBox(
+                Block(-1, ""),
+                {newSrc->
+                        if(newSrc != "") {
+                            // TODO: save here
+                            blockState.value = blockState.value.appendTail(splitter, newSrc)
+                            openState.value = blockState.value.map { false }
+                        }
+                },
+                null)
+        }
     }
 }
 
 @Composable
-fun ColumnScope.RenderEditBox(block: Block, onBlockChange: (id: Int, newSrc: String) -> Unit, onOpen: (open: Boolean)-> Unit) {
+fun ColumnScope.RenderEditBox(block: Block, onSubmit: (newSrc: String) -> Unit, onCancel: (()-> Unit)?) {
     var textState by remember { mutableStateOf(block.src) }
     TextField(
         value = textState,
         onValueChange = {textState = it}
     )
     Row(modifier=Modifier.align(Alignment.End)) {
-        Button(onClick = {
-            textState = block.src
-            onOpen(false)
-        }) {
-            Text("Cancel")
+        onCancel?.let {
+            Button(onClick = {
+                it()
+            }) {
+                Text("Cancel")
+            }
         }
         Button(onClick = {
-            onBlockChange(block.id, textState)
+            onSubmit(textState)
+            textState = ""
         }) {
             Text("Submit")
         }
@@ -115,7 +130,7 @@ fun RenderTopLevelBlock(block: Block, isOpen: Boolean, parseFun: (block:String)-
                 ctx.renderer.renderBlock(ctx, node, true)
             }
 
-            RenderEditBox(block, onBlockChange, onOpen)
+            RenderEditBox(block, { onBlockChange(block.id, it) }, { onOpen(false) } )
         }
     } else {
         Box(modifier=Modifier.clickable { onOpen(true) }) {

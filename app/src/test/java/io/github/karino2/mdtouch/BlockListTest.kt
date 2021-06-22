@@ -28,8 +28,8 @@ class BlockListTest {
         For append last block, newly added block will be separated by \n\n.
      */
     @Test
-    fun update_appendOneBlockToTail() {
-        val actual = testBlocks.update(::splitter, -1, "newBlock")
+    fun appendTail_OneBlock() {
+        val actual = testBlocks.appendTail(::splitter, "newBlock")
         assertNotEquals(testBlocks, actual)
         testBlocks.forEachIndexed { index, block ->
             assertEquals(block, actual[index])
