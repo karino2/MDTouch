@@ -80,6 +80,28 @@ fun RenderTopLevelBlocks(blocks: List<Block>, parseFun: (block:String)->ASTNode,
 }
 
 @Composable
+fun ColumnScope.RenderEditBox(block: Block, onBlockChange: (id: Int, newSrc: String) -> Unit, onOpen: (open: Boolean)-> Unit) {
+    var textState by remember { mutableStateOf(block.src) }
+    TextField(
+        value = textState,
+        onValueChange = {textState = it}
+    )
+    Row(modifier=Modifier.align(Alignment.End)) {
+        Button(onClick = {
+            textState = block.src
+            onOpen(false)
+        }) {
+            Text("Cancel")
+        }
+        Button(onClick = {
+            onBlockChange(block.id, textState)
+        }) {
+            Text("Submit")
+        }
+    }
+}
+
+@Composable
 fun RenderTopLevelBlock(block: Block, isOpen: Boolean, parseFun: (block:String)->ASTNode, renderer: MarkdownRenderer,
                         onBlockChange: (id: Int, newSrc: String) -> Unit, onOpen: (open: Boolean)-> Unit) {
     if (block.src == "\n")
@@ -93,24 +115,7 @@ fun RenderTopLevelBlock(block: Block, isOpen: Boolean, parseFun: (block:String)-
                 ctx.renderer.renderBlock(ctx, node, true)
             }
 
-            var textState by remember { mutableStateOf(block.src) }
-            TextField(
-                value = textState,
-                onValueChange = {textState = it}
-            )
-            Row(modifier=Modifier.align(Alignment.End)) {
-                Button(onClick = {
-                    textState = block.src
-                    onOpen(false)
-                }) {
-                    Text("Cancel")
-                }
-                Button(onClick = {
-                    onBlockChange(block.id, textState)
-                }) {
-                    Text("Submit")
-                }
-            }
+            RenderEditBox(block, onBlockChange, onOpen)
         }
     } else {
         Box(modifier=Modifier.clickable { onOpen(true) }) {
