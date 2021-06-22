@@ -21,15 +21,15 @@ class MainActivity : ComponentActivity() {
         val parser = Parser()
         val parseFun : (block:String) -> ASTNode = { parser.parseBlock(it) }
         val renderer = defaultRenderer()
-        val blocks = parser.splitBlocks(md)
 
-
+        val blockSources = parser.splitBlocks(md)
+        val blockList = BlockList.toBlocks(blockSources)
 
         setContent {
             MDTouchTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
-                    RenderTopLevelBlocks(blocks, parseFun, renderer)
+                    RenderTopLevelBlocks(blockList, parseFun, renderer, { parser.splitBlocks(it) })
                 }
             }
         }

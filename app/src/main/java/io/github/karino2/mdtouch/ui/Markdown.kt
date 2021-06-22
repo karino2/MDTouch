@@ -1,14 +1,11 @@
 package io.github.karino2.mdtouch.ui
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.LocalTextStyle
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
@@ -16,8 +13,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.karino2.mdtouch.Block
+import io.github.karino2.mdtouch.ui.theme.Teal200
+import io.github.karino2.mdtouch.update
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
 import org.intellij.markdown.ast.*
@@ -30,7 +31,10 @@ data class MarkdownRenderer(
 )
 
 // src is topLevelBlock.
-data class RenderContext(val src: String, val renderer: MarkdownRenderer)
+data class RenderContext(val block: Block, val renderer: MarkdownRenderer, val onBlockChange: (id: Int, newSrc: String) -> Unit) {
+    val src : String
+        get() = block.src
+}
 
 fun defaultRenderer() = MarkdownRenderer(
     renderBlock = { ctx, block, isTopLevel ->
@@ -50,19 +54,69 @@ fun defaultRenderer() = MarkdownRenderer(
 )
 
 @Composable
-fun RenderTopLevelBlocks(blocks: List<String>, parseFun: (block:String)->ASTNode, renderer: MarkdownRenderer){
+fun RenderTopLevelBlocks(blocks: List<Block>, parseFun: (block:String)->ASTNode, renderer: MarkdownRenderer, splitter: (src:String)->List<String>){
+    val blockState = remember { mutableStateOf(blocks) }
+    val openState = remember { mutableStateOf(blocks.map { false }) }
+
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-        blocks.forEach {
-            RenderTopLevelBlock(it, parseFun, renderer)
+        blockState.value.forEachIndexed { index, block ->
+            key(block.id) {
+                RenderTopLevelBlock(block, openState.value[index], parseFun, renderer,
+                    onBlockChange = {id, newSrc ->
+                        val newBlocks = blockState.value.update(splitter, id, newSrc)
+                        if (newBlocks != blockState.value){
+                            // TODO: save here
+                            blockState.value = newBlocks
+                        }
+                        openState.value = blockState.value.map { false }
+                    },
+                    onOpen = {open ->
+                        openState.value = openState.value.mapIndexed { index2, _ -> if(index==index2) open else false }
+                    }
+                )
+            }
         }
     }
 }
 
 @Composable
-fun RenderTopLevelBlock(block: String, parseFun: (block:String)->ASTNode, renderer: MarkdownRenderer) {
-    val node = parseFun(block)
-    val ctx = RenderContext(block, renderer)
-    ctx.renderer.renderBlock(ctx, node, true)
+fun RenderTopLevelBlock(block: Block, isOpen: Boolean, parseFun: (block:String)->ASTNode, renderer: MarkdownRenderer,
+                        onBlockChange: (id: Int, newSrc: String) -> Unit, onOpen: (open: Boolean)-> Unit) {
+    if (block.src == "\n")
+        return
+    val node = parseFun(block.src)
+    val ctx = RenderContext(block, renderer, onBlockChange)
+    // draw bounding box and call onOpen
+    if (isOpen) {
+        Column(modifier=Modifier.fillMaxWidth()) {
+            Box(modifier=Modifier.background(Teal200).fillMaxWidth()) {
+                ctx.renderer.renderBlock(ctx, node, true)
+            }
+
+            var textState by remember { mutableStateOf(block.src) }
+            TextField(
+                value = textState,
+                onValueChange = {textState = it}
+            )
+            Row(modifier=Modifier.align(Alignment.End)) {
+                Button(onClick = {
+                    textState = block.src
+                    onOpen(false)
+                }) {
+                    Text("Cancel")
+                }
+                Button(onClick = {
+                    onBlockChange(block.id, textState)
+                }) {
+                    Text("Submit")
+                }
+            }
+        }
+    } else {
+        Box(modifier=Modifier.clickable { onOpen(true) }) {
+            ctx.renderer.renderBlock(ctx, node, true)
+        }
+    }
 }
 
 @Composable
