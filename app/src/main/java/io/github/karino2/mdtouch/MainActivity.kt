@@ -27,7 +27,8 @@ class MainActivity : ComponentActivity() {
 
     fun getUrl(intent: Intent?, state: Bundle?) : Uri? {
         return intent?.let {
-            if (it.action == Intent.ACTION_VIEW) {
+            if (it.action == Intent.ACTION_VIEW ||
+                    it.action == Intent.ACTION_EDIT) {
                 it.data
             }
             else
