@@ -2,9 +2,9 @@ package io.github.karino2.mdtouch.ui
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -13,13 +13,10 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.github.karino2.mdtouch.Block
-import io.github.karino2.mdtouch.appendTail
+import io.github.karino2.mdtouch.*
 import io.github.karino2.mdtouch.ui.theme.Teal200
-import io.github.karino2.mdtouch.update
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
 import org.intellij.markdown.ast.*
@@ -55,36 +52,41 @@ fun defaultRenderer() = MarkdownRenderer(
 )
 
 @Composable
-fun RenderTopLevelBlocks(blocks: List<Block>, parseFun: (block:String)->ASTNode, renderer: MarkdownRenderer, splitter: (src:String)->List<String>){
-    val blockState = remember { mutableStateOf(blocks) }
-    val openState = remember { mutableStateOf(blocks.map { false }) }
+fun RenderMd(viewModel: MdViewModel, renderer: MarkdownRenderer, parseFun: (block:String)->ASTNode, splitter: (src:String)->List<String>, onUpdateBlocks: (blocks: List<Block>)->Unit){
+    val blocks : List<Block> by viewModel.blocks.observeAsState(emptyList())
+    val openState : List<Boolean> by viewModel.openState.observeAsState(emptyList())
 
+    RenderTopLevelBlocks(blocks, openState, renderer, parseFun, splitter,
+        { newblocks ->
+            viewModel.updateBlocks(newblocks)
+            onUpdateBlocks(newblocks)
+        },
+        {idx, open -> viewModel.updateOpenState(idx, open) })
+}
+
+@Composable
+fun RenderTopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, renderer: MarkdownRenderer, parseFun: (block:String)->ASTNode, splitter: (src:String)->List<String>, onUpdateBlocks: (blocks: List<Block>)->Unit, onOpenClose: (idx: Int, isOpen: Boolean)->Unit){
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-        blockState.value.forEachIndexed { index, block ->
+        blocks.forEachIndexed { index, block ->
             key(block.id) {
-                RenderTopLevelBlock(block, openState.value[index], parseFun, renderer,
+                RenderTopLevelBlock(block, openState[index], parseFun, renderer,
                     onBlockChange = {id, newSrc ->
-                        val newBlocks = blockState.value.update(splitter, id, newSrc)
-                        if (newBlocks != blockState.value){
-                            // TODO: save here
-                            blockState.value = newBlocks
-                        }
-                        openState.value = blockState.value.map { false }
+                        val newBlocks = blocks.update(splitter, id, newSrc)
+                        onUpdateBlocks(newBlocks)
                     },
                     onOpen = {open ->
-                        openState.value = openState.value.mapIndexed { index2, _ -> if(index==index2) open else false }
+                        onOpenClose(index, open)
                     }
                 )
             }
         }
-        if (openState.value.all{ !it }) {
+        if (openState.all{ !it }) {
             RenderEditBox(
                 Block(-1, ""),
                 {newSrc->
                         if(newSrc != "") {
-                            // TODO: save here
-                            blockState.value = blockState.value.appendTail(splitter, newSrc)
-                            openState.value = blockState.value.map { false }
+                            val newBlocks = blocks.appendTail(splitter, newSrc)
+                            onUpdateBlocks(newBlocks)
                         }
                 },
                 null)
@@ -260,7 +262,7 @@ fun DefaultRenderBlock(ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) 
             RenderCodeFence(ctx.src, block)
         }
     }
-    println(block.type.name)
+    // println(block.type.name)
 }
 
 // similar to CodeFenceGeneratingProvider at GeneratingProviders.kt
