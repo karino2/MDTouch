@@ -46,7 +46,7 @@ class FileChooserActivity : ComponentActivity() {
                         .fillMaxWidth()
                         .padding(5.dp)) {
                         Button(onClick={
-                            getNewFile.launch("text/*")
+                            getNewFile.launch("")
                         }) {
                             Text("New File")
                         }
