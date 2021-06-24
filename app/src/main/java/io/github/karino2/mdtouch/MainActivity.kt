@@ -12,7 +12,6 @@ import androidx.compose.material.Surface
 import io.github.karino2.mdtouch.ui.RenderMd
 import io.github.karino2.mdtouch.ui.defaultRenderer
 import io.github.karino2.mdtouch.ui.theme.MDTouchTheme
-import org.intellij.markdown.ast.ASTNode
 import java.io.FileInputStream
 import java.io.FileOutputStream
 
@@ -63,7 +62,7 @@ class MainActivity : ComponentActivity() {
             val fis = FileInputStream(desc.fileDescriptor)
             fis.bufferedReader().use { it.readText() }
         }
-        viewModel.updateMd(text)
+        viewModel.openMd(text)
     }
 
     fun saveMd(text: String) {
@@ -82,22 +81,22 @@ class MainActivity : ComponentActivity() {
 
         _url = getUrl(intent, savedInstanceState)
 
-        val parser = Parser()
-        val parseFun : (block:String) -> ASTNode = { parser.parseBlock(it) }
         val renderer = defaultRenderer()
 
         _url?.let { tryOpenUrl(it) }
+
+        viewModel.blocks.observe(this) {newBlockList ->
+            if(!viewModel.duringOpen) {
+                newBlockList.joinToString("") { it.src }
+                    .also { saveMd(it) }
+            }
+        }
 
         setContent {
             MDTouchTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
-                    RenderMd(viewModel, renderer, parseFun,  { parser.splitBlocks(it) },
-                        { newBlockList->
-                            newBlockList.joinToString("") { it.src }
-                                .also { saveMd(it) }
-                        }
-                    )
+                    RenderMd(viewModel, renderer)
                 }
             }
         }

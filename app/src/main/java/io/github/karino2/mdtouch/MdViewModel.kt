@@ -13,16 +13,36 @@ class MdViewModel : ViewModel() {
     private val _openState = MutableLiveData(emptyList<Boolean>())
     val openState: LiveData<List<Boolean>> = _openState
 
-    fun updateBlocks(newBlocks: List<Block>) {
+    private fun updateBlocks(newBlocks: List<Block>) {
         _blocks.value = newBlocks
         _openState.value = newBlocks.map { false }
+    }
+
+    private val _splitter = { src:String -> parser.splitBlocks(src) }
+
+    fun updateBlock(id: Int, blockSrc: String) {
+        val newBlocks = _blocks.value!!.update(_splitter, id, blockSrc)
+        updateBlocks(newBlocks)
+    }
+
+    fun appendTailBlocks(blockSrc: String) {
+        if(blockSrc != "") {
+            val newBlocks = blocks.value!!.appendTail(_splitter, blockSrc)
+            updateBlocks(newBlocks)
+        }
     }
 
     fun updateOpenState(idx: Int, isOpen: Boolean) {
         _openState.value = _openState.value!!.mapIndexed { index2, _ -> if(idx==index2) isOpen else false }
     }
 
-    fun updateMd(newMd: String) {
+    var duringOpen = false
+
+    fun openMd(newMd: String) {
+        duringOpen = true
         updateBlocks(BlockList.toBlocks(parser.splitBlocks(newMd)))
+        duringOpen = false
     }
+
+    fun parseBlock(src: String) = parser.parseBlock(src)
 }

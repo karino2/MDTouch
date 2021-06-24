@@ -52,30 +52,24 @@ fun defaultRenderer() = MarkdownRenderer(
 )
 
 @Composable
-fun RenderMd(viewModel: MdViewModel, renderer: MarkdownRenderer, parseFun: (block:String)->ASTNode, splitter: (src:String)->List<String>, onUpdateBlocks: (blocks: List<Block>)->Unit){
+fun RenderMd(viewModel: MdViewModel, renderer: MarkdownRenderer){
     val blocks : List<Block> by viewModel.blocks.observeAsState(emptyList())
     val openState : List<Boolean> by viewModel.openState.observeAsState(emptyList())
 
-    RenderTopLevelBlocks(blocks, openState, renderer, parseFun, splitter,
-        { newblocks ->
-            viewModel.updateBlocks(newblocks)
-            onUpdateBlocks(newblocks)
-        },
-        {idx, open -> viewModel.updateOpenState(idx, open) })
+    RenderTopLevelBlocks(blocks, openState, renderer, viewModel)
 }
 
 @Composable
-fun RenderTopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, renderer: MarkdownRenderer, parseFun: (block:String)->ASTNode, splitter: (src:String)->List<String>, onUpdateBlocks: (blocks: List<Block>)->Unit, onOpenClose: (idx: Int, isOpen: Boolean)->Unit){
+fun RenderTopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, renderer: MarkdownRenderer, viewModel: MdViewModel){
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         blocks.forEachIndexed { index, block ->
             key(block.id) {
-                RenderTopLevelBlock(block, openState[index], parseFun, renderer,
+                RenderTopLevelBlock(block, openState[index], { viewModel.parseBlock(it) }, renderer,
                     onBlockChange = {id, newSrc ->
-                        val newBlocks = blocks.update(splitter, id, newSrc)
-                        onUpdateBlocks(newBlocks)
+                        viewModel.updateBlock(id, newSrc)
                     },
                     onOpen = {open ->
-                        onOpenClose(index, open)
+                        viewModel.updateOpenState(index, open)
                     }
                 )
             }
@@ -84,10 +78,7 @@ fun RenderTopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, renderer
             RenderEditBox(
                 Block(-1, ""),
                 {newSrc->
-                        if(newSrc != "") {
-                            val newBlocks = blocks.appendTail(splitter, newSrc)
-                            onUpdateBlocks(newBlocks)
-                        }
+                    viewModel.appendTailBlocks(newSrc)
                 },
                 null)
         }
