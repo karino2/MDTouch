@@ -13,7 +13,7 @@ class MdViewModel : ViewModel() {
     private val _openState = MutableLiveData(emptyList<Boolean>())
     val openState: LiveData<List<Boolean>> = _openState
 
-    private fun updateBlocks(newBlocks: List<Block>) {
+    private fun onBlocksChange(newBlocks: List<Block>) {
         _blocks.value = newBlocks
         _openState.value = newBlocks.map { false }
     }
@@ -22,13 +22,13 @@ class MdViewModel : ViewModel() {
 
     fun updateBlock(id: Int, blockSrc: String) {
         val newBlocks = _blocks.value!!.update(_splitter, id, blockSrc)
-        updateBlocks(newBlocks)
+        onBlocksChange(newBlocks)
     }
 
     fun appendTailBlocks(blockSrc: String) {
         if(blockSrc != "") {
             val newBlocks = blocks.value!!.appendTail(_splitter, blockSrc)
-            updateBlocks(newBlocks)
+            onBlocksChange(newBlocks)
         }
     }
 
@@ -40,7 +40,7 @@ class MdViewModel : ViewModel() {
 
     fun openMd(newMd: String) {
         duringOpen = true
-        updateBlocks(BlockList.toBlocks(parser.splitBlocks(newMd)))
+        onBlocksChange(BlockList.toBlocks(parser.splitBlocks(newMd)))
         duringOpen = false
     }
 
