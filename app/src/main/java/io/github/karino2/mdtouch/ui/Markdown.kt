@@ -239,6 +239,16 @@ fun AnnotatedString.Builder.appendInline(md: String, node : ASTNode, childrenSel
                         appendInline(md, child, {parent-> parent.children.subList(2, parent.children.size-2)}, colors)
                     }
                 }
+                GFMWithWikiFlavourDescriptor.WIKI_LINK -> {
+                    // [[WikiName]]
+                    assert(child.children.size == 5)
+
+                    // Render [[WikiName]] as [[WikiName]] with link like decoration.
+                    withStyle(SpanStyle(colors.primary, textDecoration = TextDecoration.Underline)) {
+                        append(child.getTextInNode(md).toString())
+                    }
+
+                }
 
             }
         }
