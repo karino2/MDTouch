@@ -151,19 +151,19 @@ fun RenderBox(content: AnnotatedString, paddingBottom: Dp, style: TextStyle = Lo
 @Composable
 fun DefaultRenderHeading(ctx: RenderContext, block: CompositeASTNode, style: TextStyle) {
     RenderBox(buildAnnotatedString {
-        block.children.forEach { appendHeadingContent(ctx.src, it) }
+        block.children.forEach { appendHeadingContent(ctx.src, it, MaterialTheme.colors) }
     }, 0.dp, style)
 }
 
-fun AnnotatedString.Builder.appendHeadingContent(md: String, node : ASTNode){
+fun AnnotatedString.Builder.appendHeadingContent(md: String, node : ASTNode, colors: Colors){
     when(node.type) {
         MarkdownTokenTypes.ATX_CONTENT -> {
-            appendTrimmingInline(md, node)
+            appendTrimmingInline(md, node, colors)
             return
         }
     }
     if (node is CompositeASTNode) {
-        node.children.forEach { appendHeadingContent(md, it) }
+        node.children.forEach { appendHeadingContent(md, it, colors) }
         return
     }
 }
@@ -183,8 +183,13 @@ fun selectTrimmingInline(node: ASTNode) : List<ASTNode> {
 }
 
 
+fun AnnotatedString.Builder.withStyle(style: SpanStyle, builder: AnnotatedString.Builder.()->Unit) {
+    pushStyle(style)
+    this.builder()
+    pop()
+}
 
-fun AnnotatedString.Builder.appendInline(md: String, node : ASTNode, childrenSelector : (ASTNode)->List<ASTNode>){
+fun AnnotatedString.Builder.appendInline(md: String, node : ASTNode, childrenSelector : (ASTNode)->List<ASTNode>, colors: Colors){
     val targets = childrenSelector(node)
     targets.forEachIndexed { index, child->
         if(child is LeafASTNode) {
@@ -210,19 +215,29 @@ fun AnnotatedString.Builder.appendInline(md: String, node : ASTNode, childrenSel
                     pop()
                 }
                 MarkdownElementTypes.STRONG -> {
-                    pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-                    appendInline(md, child, {parent-> parent.children.subList(2, parent.children.size-2)})
-                    pop()
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                        appendInline(md, child, {parent-> parent.children.subList(2, parent.children.size-2)}, colors)
+                    }
                 }
                 MarkdownElementTypes.EMPH -> {
-                    pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
-                    appendInline(md, child, {parent-> parent.children.subList(1, parent.children.size-1)})
-                    pop()
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                        appendInline(md, child, {parent-> parent.children.subList(1, parent.children.size-1)}, colors)
+                    }
+                }
+                MarkdownElementTypes.INLINE_LINK -> {
+                    withStyle(SpanStyle(colors.primary, textDecoration = TextDecoration.Underline)) {
+                        child.children.filter {it.type == MarkdownElementTypes.LINK_TEXT}
+                            .forEach { linktext ->
+                                linktext.children.subList(1, linktext.children.size-1).forEach {
+                                    append(it.getTextInNode(md).toString())
+                                }
+                            }
+                    }
                 }
                 GFMElementTypes.STRIKETHROUGH -> {
-                    pushStyle(SpanStyle(textDecoration = TextDecoration.LineThrough))
-                    appendInline(md, child, {parent-> parent.children.subList(2, parent.children.size-2)})
-                    pop()
+                    withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
+                        appendInline(md, child, {parent-> parent.children.subList(2, parent.children.size-2)}, colors)
+                    }
                 }
 
             }
@@ -230,8 +245,8 @@ fun AnnotatedString.Builder.appendInline(md: String, node : ASTNode, childrenSel
     }
 }
 
-fun AnnotatedString.Builder.appendTrimmingInline(md: String, node : ASTNode){
-    appendInline(md, node, ::selectTrimmingInline)
+fun AnnotatedString.Builder.appendTrimmingInline(md: String, node : ASTNode, colors: Colors){
+    appendInline(md, node, ::selectTrimmingInline, colors)
 }
 
 
@@ -258,7 +273,7 @@ fun DefaultRenderBlock(ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) 
         }
         MarkdownElementTypes.PARAGRAPH -> {
             RenderBox(buildAnnotatedString {
-                appendTrimmingInline(ctx.src, block)
+                appendTrimmingInline(ctx.src, block, MaterialTheme.colors)
             }, if (isTopLevel) 8.dp else 0.dp)
         }
         MarkdownElementTypes.UNORDERED_LIST -> {
