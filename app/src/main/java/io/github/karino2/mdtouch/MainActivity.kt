@@ -3,6 +3,7 @@ package io.github.karino2.mdtouch
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -13,6 +14,7 @@ import io.github.karino2.mdtouch.ui.RenderMd
 import io.github.karino2.mdtouch.ui.defaultRenderer
 import io.github.karino2.mdtouch.ui.theme.MDTouchTheme
 import java.io.FileInputStream
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 
 class MainActivity : ComponentActivity() {
@@ -67,12 +69,26 @@ class MainActivity : ComponentActivity() {
 
     fun saveMd(text: String) {
         _url?.let { url->
-            contentResolver.openFileDescriptor(url, "w")!!.use {desc->
-                val fos = FileOutputStream(desc.fileDescriptor)
-                fos.use {
-                    it.write(text.toByteArray())
+            try {
+                contentResolver.openFileDescriptor(url, "wt")!!.use {desc->
+                    writeText(desc, text)
                 }
+            } catch(_: FileNotFoundException) {
+                // GoogleDrive throw FileNotFoundException for wt mode.
+                // But content provider of local file treat "w" as not truncate.
+                // So first try wt, then use w to ensure allcase with truncate.
+                contentResolver.openFileDescriptor(url, "w")!!.use {desc->
+                    writeText(desc, text)
+                }
+
             }
+        }
+    }
+
+    private fun writeText(desc: ParcelFileDescriptor, text: String) {
+        val fos = FileOutputStream(desc.fileDescriptor)
+        fos.use {
+            it.write(text.toByteArray())
         }
     }
 
