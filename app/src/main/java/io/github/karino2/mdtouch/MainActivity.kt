@@ -11,7 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import io.github.karino2.mdtouch.ui.RenderMd
+import io.github.karino2.mdtouch.ui.MdPanel
 import io.github.karino2.mdtouch.ui.theme.MDTouchTheme
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -119,7 +119,7 @@ class MainActivity : ComponentActivity() {
             MDTouchTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
-                    RenderMd(viewModel)
+                    MdPanel(viewModel)
                 }
             }
         }
