@@ -36,6 +36,15 @@ class MdViewModel : ViewModel() {
         _openState.value = _openState.value!!.mapIndexed { index2, _ -> if(idx==index2) isOpen else false }
     }
 
+    val isBlockOpen : Boolean
+    get() {
+        return _openState.value!!.any { it }
+    }
+
+    fun closeOpenState() {
+        _openState.value = _openState.value!!.map { false }
+    }
+
     var duringOpen = false
 
     fun openMd(newMd: String) {

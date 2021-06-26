@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -107,6 +108,15 @@ class MainActivity : ComponentActivity() {
                     .also { saveMd(it) }
             }
         }
+
+        onBackPressedDispatcher.addCallback(this, object: OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if(viewModel.isBlockOpen)
+                    return viewModel.closeOpenState()
+                else
+                    finish()
+            }
+        })
 
         setContent {
             MDTouchTheme {
