@@ -54,6 +54,7 @@ fun TopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, viewModel: MdV
                         viewModel.updateOpenState(index, open)
                     }
                 )
+                Spacer(modifier = Modifier.size(5.dp))
             }
         }
         if (openState.all{ !it }) {
@@ -72,7 +73,8 @@ fun ColumnScope.BlockEditBox(block: Block, onSubmit: (newSrc: String) -> Unit, o
     var textState by remember { mutableStateOf(block.src) }
     TextField(
         value = textState,
-        onValueChange = {textState = it}
+        onValueChange = {textState = it},
+        modifier=Modifier.fillMaxWidth()
     )
     Row(modifier=Modifier.align(Alignment.End)) {
         onCancel?.let {
