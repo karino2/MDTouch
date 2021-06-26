@@ -12,7 +12,6 @@ import androidx.activity.viewModels
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import io.github.karino2.mdtouch.ui.RenderMd
-import io.github.karino2.mdtouch.ui.defaultRenderer
 import io.github.karino2.mdtouch.ui.theme.MDTouchTheme
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -98,8 +97,6 @@ class MainActivity : ComponentActivity() {
 
         _url = getUrl(intent, savedInstanceState)
 
-        val renderer = defaultRenderer()
-
         _url?.let { tryOpenUrl(it) }
 
         viewModel.blocks.observe(this) {newBlockList ->
@@ -122,7 +119,7 @@ class MainActivity : ComponentActivity() {
             MDTouchTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
-                    RenderMd(viewModel, renderer)
+                    RenderMd(viewModel)
                 }
             }
         }

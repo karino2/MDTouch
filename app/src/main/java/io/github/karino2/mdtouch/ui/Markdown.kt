@@ -27,48 +27,26 @@ import org.intellij.markdown.ast.impl.ListCompositeNode
 import org.intellij.markdown.flavours.gfm.GFMElementTypes
 
 
-data class MarkdownRenderer(
-    val renderBlock:@Composable (ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) -> Unit,
-    val renderHeading:@Composable (ctx: RenderContext, block: CompositeASTNode, style: TextStyle) -> Unit
-)
-
 // src is topLevelBlock.
-data class RenderContext(val block: Block, val renderer: MarkdownRenderer, val onBlockChange: (id: Int, newSrc: String) -> Unit) {
+data class RenderContext(val block: Block, val onBlockChange: (id: Int, newSrc: String) -> Unit) {
     val src : String
         get() = block.src
 }
 
-fun defaultRenderer() = MarkdownRenderer(
-    renderBlock = { ctx, block, isTopLevel ->
-        DefaultRenderBlock(
-            ctx,
-            block,
-            isTopLevel
-        )
-    },
-    renderHeading = { ctx, block, style ->
-        DefaultRenderHeading(
-            ctx,
-            block,
-            style
-        )
-    }
-)
-
 @Composable
-fun RenderMd(viewModel: MdViewModel, renderer: MarkdownRenderer){
+fun RenderMd(viewModel: MdViewModel){
     val blocks : List<Block> by viewModel.blocks.observeAsState(emptyList())
     val openState : List<Boolean> by viewModel.openState.observeAsState(emptyList())
 
-    RenderTopLevelBlocks(blocks, openState, renderer, viewModel)
+    RenderTopLevelBlocks(blocks, openState, viewModel)
 }
 
 @Composable
-fun RenderTopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, renderer: MarkdownRenderer, viewModel: MdViewModel){
+fun RenderTopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, viewModel: MdViewModel){
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         blocks.forEachIndexed { index, block ->
             key(block.id) {
-                RenderTopLevelBlock(block, openState[index], { viewModel.parseBlock(it) }, renderer,
+                RenderTopLevelBlock(block, openState[index], { viewModel.parseBlock(it) },
                     onBlockChange = {id, newSrc ->
                         viewModel.updateBlock(id, newSrc)
                     },
@@ -114,31 +92,31 @@ fun ColumnScope.RenderEditBox(block: Block, onSubmit: (newSrc: String) -> Unit, 
 }
 
 @Composable
-fun RenderTopLevelBlock(block: Block, isOpen: Boolean, parseFun: (block:String)->ASTNode, renderer: MarkdownRenderer,
+fun RenderTopLevelBlock(block: Block, isOpen: Boolean, parseFun: (block:String)->ASTNode,
                         onBlockChange: (id: Int, newSrc: String) -> Unit, onOpen: (open: Boolean)-> Unit) {
     if (block.src == "\n")
         return
     val node = parseFun(block.src)
-    val ctx = RenderContext(block, renderer, onBlockChange)
+    val ctx = RenderContext(block, onBlockChange)
     // draw bounding box and call onOpen
     if (isOpen) {
         Column(modifier=Modifier.fillMaxWidth()) {
             Box(modifier=Modifier.background(Teal200).fillMaxWidth()) {
-                ctx.renderer.renderBlock(ctx, node, true)
+                RenderBlock(ctx, node, true)
             }
 
             RenderEditBox(block, { onBlockChange(block.id, it) }, { onOpen(false) } )
         }
     } else {
         Box(modifier=Modifier.clickable { onOpen(true) }) {
-            ctx.renderer.renderBlock(ctx, node, true)
+            RenderBlock(ctx, node, true)
         }
     }
 }
 
 @Composable
 fun RenderBlocks(ctx: RenderContext, blocks: CompositeASTNode, isTopLevel: Boolean = false) {
-    blocks.children.forEach { ctx.renderer.renderBlock(ctx, it, isTopLevel) }
+    blocks.children.forEach { RenderBlock(ctx, it, isTopLevel) }
 }
 
 
@@ -149,7 +127,7 @@ fun RenderBox(content: AnnotatedString, paddingBottom: Dp, style: TextStyle = Lo
 
 
 @Composable
-fun DefaultRenderHeading(ctx: RenderContext, block: CompositeASTNode, style: TextStyle) {
+fun RenderHeading(ctx: RenderContext, block: CompositeASTNode, style: TextStyle) {
     RenderBox(buildAnnotatedString {
         block.children.forEach { appendHeadingContent(ctx.src, it, MaterialTheme.colors) }
     }, 0.dp, style)
@@ -261,25 +239,25 @@ fun AnnotatedString.Builder.appendTrimmingInline(md: String, node : ASTNode, col
 
 
 @Composable
-fun DefaultRenderBlock(ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) {
+fun RenderBlock(ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) {
     when(block.type) {
         MarkdownElementTypes.ATX_1 -> {
-            ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h3)
+            RenderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h3)
         }
         MarkdownElementTypes.ATX_2 -> {
-            ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h4)
+            RenderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h4)
         }
         MarkdownElementTypes.ATX_3 -> {
-            ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h5)
+            RenderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h5)
         }
         MarkdownElementTypes.ATX_4 -> {
-            ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h6)
+            RenderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h6)
         }
         MarkdownElementTypes.ATX_5 -> {
-            ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.subtitle1)
+            RenderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.subtitle1)
         }
         MarkdownElementTypes.ATX_6 -> {
-            ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.subtitle2)
+            RenderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.subtitle2)
         }
         MarkdownElementTypes.PARAGRAPH -> {
             RenderBox(buildAnnotatedString {
