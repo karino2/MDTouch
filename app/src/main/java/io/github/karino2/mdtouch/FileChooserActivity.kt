@@ -44,17 +44,23 @@ class FileChooserActivity : ComponentActivity() {
                 Surface(color = MaterialTheme.colors.background) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier
                         .fillMaxWidth()
+                        .fillMaxHeight()
                         .padding(5.dp)) {
-                        Button(onClick={
-                            getNewFile.launch("")
-                        }) {
-                            Text("New File")
+                        Box(modifier=Modifier.weight(1f)) {
+                            Button(onClick={
+                                getNewFile.launch("")
+                            }, modifier = Modifier.align(Alignment.Center)) {
+                                Text("New File")
+                            }
+
                         }
                         Spacer(modifier = Modifier.size(5.dp))
-                        Button(onClick={
-                            openFile.launch(arrayOf("text/*"))
-                        }) {
-                            Text("Open File")
+                        Box(modifier=Modifier.weight(1f)) {
+                            Button(onClick = {
+                                openFile.launch(arrayOf("text/*"))
+                            },  modifier = Modifier.align(Alignment.Center)) {
+                                Text("Open File")
+                            }
                         }
                     }
                 }
