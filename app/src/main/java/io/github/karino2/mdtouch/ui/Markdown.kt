@@ -13,6 +13,9 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.karino2.mdtouch.*
@@ -21,6 +24,7 @@ import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
 import org.intellij.markdown.ast.*
 import org.intellij.markdown.ast.impl.ListCompositeNode
+import org.intellij.markdown.flavours.gfm.GFMElementTypes
 
 
 data class MarkdownRenderer(
@@ -203,6 +207,21 @@ fun AnnotatedString.Builder.appendInline(md: String, node : ASTNode, childrenSel
                     child.children.subList(1, child.children.size-1).forEach { item->
                         append(item.getTextInNode(md).toString())
                     }
+                    pop()
+                }
+                MarkdownElementTypes.STRONG -> {
+                    pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
+                    appendInline(md, child, {parent-> parent.children.subList(2, parent.children.size-2)})
+                    pop()
+                }
+                MarkdownElementTypes.EMPH -> {
+                    pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
+                    appendInline(md, child, {parent-> parent.children.subList(1, parent.children.size-1)})
+                    pop()
+                }
+                GFMElementTypes.STRIKETHROUGH -> {
+                    pushStyle(SpanStyle(textDecoration = TextDecoration.LineThrough))
+                    appendInline(md, child, {parent-> parent.children.subList(2, parent.children.size-2)})
                     pop()
                 }
 
