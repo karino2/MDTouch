@@ -220,22 +220,22 @@ fun AnnotatedString.Builder.appendTrimmingInline(md: String, node : ASTNode){
 fun DefaultRenderBlock(ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) {
     when(block.type) {
         MarkdownElementTypes.ATX_1 -> {
-            ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h1)
-        }
-        MarkdownElementTypes.ATX_2 -> {
-            ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h2)
-        }
-        MarkdownElementTypes.ATX_3 -> {
             ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h3)
         }
-        MarkdownElementTypes.ATX_4 -> {
+        MarkdownElementTypes.ATX_2 -> {
             ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h4)
         }
-        MarkdownElementTypes.ATX_5 -> {
+        MarkdownElementTypes.ATX_3 -> {
             ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h5)
         }
-        MarkdownElementTypes.ATX_6 -> {
+        MarkdownElementTypes.ATX_4 -> {
             ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.h6)
+        }
+        MarkdownElementTypes.ATX_5 -> {
+            ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.subtitle1)
+        }
+        MarkdownElementTypes.ATX_6 -> {
+            ctx.renderer.renderHeading(ctx, block as CompositeASTNode, MaterialTheme.typography.subtitle2)
         }
         MarkdownElementTypes.PARAGRAPH -> {
             RenderBox(buildAnnotatedString {
