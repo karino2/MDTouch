@@ -7,6 +7,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -71,10 +74,13 @@ fun TopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, viewModel: MdV
 @Composable
 fun ColumnScope.BlockEditBox(block: Block, onSubmit: (newSrc: String) -> Unit, onCancel: (()-> Unit)?) {
     var textState by remember { mutableStateOf(block.src) }
+    val isFocus = onCancel != null
+    val requester = FocusRequester()
+
     TextField(
         value = textState,
         onValueChange = {textState = it},
-        modifier=Modifier.fillMaxWidth()
+        modifier=Modifier.fillMaxWidth().focusRequester(requester)
     )
     Row(modifier=Modifier.align(Alignment.End)) {
         onCancel?.let {
@@ -89,6 +95,11 @@ fun ColumnScope.BlockEditBox(block: Block, onSubmit: (newSrc: String) -> Unit, o
             textState = ""
         }) {
             Text("Submit")
+        }
+    }
+    if (isFocus) {
+        SideEffect {
+            requester.requestFocus()
         }
     }
 }
