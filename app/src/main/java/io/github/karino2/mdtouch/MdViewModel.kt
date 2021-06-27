@@ -14,14 +14,14 @@ class MdViewModel : ViewModel() {
     val openState: LiveData<List<Boolean>> = _openState
 
 
-    private val _notifySaveState = MutableLiveData(0)
+    private val _notifySaveState = MutableLiveData<Int>()
     val notifySaveState : LiveData<Int> = _notifySaveState
 
     private fun onBlocksChange(newBlocks: List<Block>, notifySave : Boolean = true) {
         _blocks.value = newBlocks
         _openState.value = newBlocks.map { false }
         if(notifySave) {
-            _notifySaveState.value = _notifySaveState.value!!+1
+            _notifySaveState.value = _notifySaveState.value?.let { it +1 } ?: 0
         }
     }
 
