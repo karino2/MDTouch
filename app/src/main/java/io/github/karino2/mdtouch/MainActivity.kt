@@ -99,11 +99,10 @@ class MainActivity : ComponentActivity() {
 
         _url?.let { tryOpenUrl(it) }
 
-        viewModel.blocks.observe(this) {newBlockList ->
-            if(!viewModel.duringOpen) {
-                newBlockList.joinToString("") { it.src }
-                    .also { saveMd(it) }
-            }
+        viewModel.notifySaveState.observe(this) {count ->
+            if (count != 0)
+                viewModel.blocks.value!!.joinToString("") { it.src }
+                        .also { saveMd(it) }
         }
 
         onBackPressedDispatcher.addCallback(this, object: OnBackPressedCallback(true) {
