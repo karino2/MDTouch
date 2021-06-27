@@ -278,7 +278,10 @@ fun MdBlock(ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) {
         }
 
         MarkdownTokenTypes.HORIZONTAL_RULE -> {
-            Divider(color=Color.DarkGray, thickness = 2.dp)
+            // for click target.
+            Box(modifier=Modifier.height(10.dp)) {
+                Divider(modifier=Modifier.align(Alignment.Center) , color=Color.DarkGray, thickness = 2.dp)
+            }
         }
     }
     // println(block.type.name)
