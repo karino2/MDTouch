@@ -276,6 +276,10 @@ fun MdBlock(ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) {
         MarkdownElementTypes.CODE_FENCE -> {
             CodeFence(ctx.src, block)
         }
+
+        MarkdownTokenTypes.HORIZONTAL_RULE -> {
+            Divider(color=Color.DarkGray, thickness = 2.dp)
+        }
     }
     // println(block.type.name)
 }
