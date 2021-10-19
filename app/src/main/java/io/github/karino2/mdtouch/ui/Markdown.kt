@@ -6,10 +6,14 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.RelocationRequester
+import androidx.compose.ui.layout.relocationRequester
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -22,6 +26,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.karino2.mdtouch.*
 import io.github.karino2.mdtouch.ui.theme.Teal200
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
 import org.intellij.markdown.ast.*
@@ -70,16 +76,33 @@ fun TopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, viewModel: MdV
     }
 }
 
+
+
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ColumnScope.BlockEditBox(block: Block, onSubmit: (newSrc: String) -> Unit, onCancel: (()-> Unit)?) {
     var textState by remember { mutableStateOf(block.src) }
     val isFocus = onCancel != null
     val requester = FocusRequester()
+    val relocationRequester = remember { RelocationRequester() }
+    val scope = rememberCoroutineScope()
 
     TextField(
         value = textState,
-        onValueChange = {textState = it},
-        modifier=Modifier.fillMaxWidth().focusRequester(requester)
+        onValueChange = {
+            textState = it
+            relocationRequester.bringIntoView()
+        },
+        modifier=Modifier.fillMaxWidth().relocationRequester(relocationRequester)
+            .focusRequester(requester)
+            .onFocusChanged {
+                if ("$it" == "Active") {
+                    scope.launch {
+                        delay(300)
+                        relocationRequester.bringIntoView()
+                    }
+                }
+            }
     )
     Row(modifier=Modifier.align(Alignment.End)) {
         onCancel?.let {
