@@ -104,15 +104,6 @@ class MainActivity : ComponentActivity() {
                     .also { saveMd(it) }
         }
 
-        onBackPressedDispatcher.addCallback(this, object: OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if(viewModel.isBlockOpen)
-                    return viewModel.closeOpenState()
-                else
-                    finish()
-            }
-        })
-
         setContent {
             MDTouchTheme {
                 // A surface container using the 'background' color from the theme

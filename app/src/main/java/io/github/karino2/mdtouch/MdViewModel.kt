@@ -9,7 +9,6 @@ class MdViewModel : ViewModel() {
     private val parser = Parser()
 
     val blocks = mutableStateOf(emptyList<Block>())
-    val openState = mutableStateOf(emptyList<Boolean>())
 
     private val _notifySaveState = MutableLiveData<Int>()
     val notifySaveState : LiveData<Int> = _notifySaveState
@@ -19,7 +18,6 @@ class MdViewModel : ViewModel() {
 
     private fun onBlocksChange(newBlocks: List<Block>, notifySave : Boolean = true) {
         blocks.value = newBlocks
-        openState.value = newBlocks.map { false }
         selectedBlock.value = emptyBlock
         if(notifySave) {
             _notifySaveState.value = _notifySaveState.value?.let { it +1 } ?: 0
@@ -40,19 +38,8 @@ class MdViewModel : ViewModel() {
         }
     }
 
-    fun updateOpenState(idx: Int, isOpen: Boolean) {
-        openState.value = openState.value.mapIndexed { index2, _ -> if(idx==index2) isOpen else false }
+    fun updateSelectionState(idx: Int, isOpen: Boolean) {
         selectedBlock.value = if(isOpen) blocks.value[idx] else emptyBlock
-    }
-
-    val isBlockOpen : Boolean
-    get() {
-        return !selectedBlock.value.isEmpty
-    }
-
-    fun closeOpenState() {
-        openState.value = openState.value.map { false }
-        selectedBlock.value = emptyBlock
     }
 
     fun openMd(newMd: String) {

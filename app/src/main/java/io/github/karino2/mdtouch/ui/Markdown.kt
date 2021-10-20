@@ -37,20 +37,20 @@ data class RenderContext(val block: Block) {
 
 @Composable
 fun MdPanel(viewModel: MdViewModel){
-    TopLevelBlocks(viewModel.blocks.value, viewModel.openState.value, viewModel.selectedBlock.value, viewModel)
+    TopLevelBlocks(viewModel.blocks.value, viewModel.selectedBlock.value, viewModel)
 }
 
 @Composable
-fun TopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, selectedBlock: Block, viewModel: MdViewModel){
+fun TopLevelBlocks(blocks: List<Block>, selectedBlock: Block, viewModel: MdViewModel){
     var textState by remember { mutableStateOf(selectedBlock.src) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.verticalScroll(rememberScrollState()).weight(1f)) {
             blocks.forEachIndexed { index, block ->
                 key(block.id) {
-                    TopLevelBlock(block, openState[index], { viewModel.parseBlock(it) },
-                        onOpen = { open ->
-                            viewModel.updateOpenState(index, open)
+                    TopLevelBlock(block, block == selectedBlock, { viewModel.parseBlock(it) },
+                        onSelect = { newSelect ->
+                            viewModel.updateSelectionState(index, newSelect)
                             textState = viewModel.selectedBlock.value.src
                         }
                     )
@@ -71,7 +71,7 @@ fun TopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, selectedBlock:
                 textState = ""
             },
              {
-                 viewModel.updateOpenState(selectedBlock.id, false)
+                 viewModel.updateSelectionState(selectedBlock.id, false)
                  textState = ""
              }
             )
@@ -105,22 +105,18 @@ fun ColumnScope.BlockEditBox(block: Block, editing: String, onEditing: (String)-
 }
 
 @Composable
-fun TopLevelBlock(block: Block, isOpen: Boolean,
+fun TopLevelBlock(block: Block, isSelected: Boolean,
                   parseFun: (block:String)->ASTNode,
-                  onOpen: (open: Boolean)-> Unit) {
+                  onSelect: (isSelect: Boolean)-> Unit) {
     if (block.src == "\n")
         return
     val node = parseFun(block.src)
     val ctx = RenderContext(block)
-    // draw bounding box and call onOpen
-    if (isOpen) {
-        Box(modifier=Modifier.background(Teal200).fillMaxWidth()) {
-            MdBlock(ctx, node, true)
-        }
-    } else {
-        Box(modifier=Modifier.clickable { onOpen(true) }) {
-            MdBlock(ctx, node, true)
-        }
+
+    // draw bounding box and call onSelect
+    val boxModifier = if(isSelected) Modifier.background(Teal200).fillMaxWidth() else Modifier.clickable { onSelect(true) }
+    Box(modifier=boxModifier) {
+        MdBlock(ctx, node, true)
     }
 }
 
