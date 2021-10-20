@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
         _url?.let { tryOpenUrl(it) }
 
         viewModel.notifySaveState.observe(this) {_ ->
-            viewModel.blocks.value!!.joinToString("") { it.src }
+            viewModel.blocks.value.joinToString("") { it.src }
                     .also { saveMd(it) }
         }
 

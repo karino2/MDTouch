@@ -1,7 +1,10 @@
 package io.github.karino2.mdtouch
 
 
-data class Block(val id: Int, val src: String)
+data class Block(val id: Int, val src: String) {
+    val isEmpty : Boolean
+        get() = id == -1
+}
 
 class BlockList {
     companion object {

@@ -26,7 +26,7 @@ class FileChooserActivity : ComponentActivity() {
                 it.write("# Hello\n\n".toByteArray())
             }
         }
-        
+
         contentResolver.takePersistableUriPermission(url, Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
         setResult(RESULT_OK, Intent().apply { data = url} )
         finish()

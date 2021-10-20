@@ -4,16 +4,9 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.RelocationRequester
-import androidx.compose.ui.layout.relocationRequester
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -24,10 +17,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.github.karino2.mdtouch.*
+import com.google.accompanist.insets.navigationBarsWithImePadding
+import io.github.karino2.mdtouch.Block
+import io.github.karino2.mdtouch.GFMWithWikiFlavourDescriptor
+import io.github.karino2.mdtouch.MdViewModel
 import io.github.karino2.mdtouch.ui.theme.Teal200
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
 import org.intellij.markdown.ast.*
@@ -36,111 +30,92 @@ import org.intellij.markdown.flavours.gfm.GFMElementTypes
 
 
 // src is topLevelBlock.
-data class RenderContext(val block: Block, val onBlockChange: (id: Int, newSrc: String) -> Unit) {
+data class RenderContext(val block: Block) {
     val src : String
         get() = block.src
 }
 
 @Composable
 fun MdPanel(viewModel: MdViewModel){
-    val blocks : List<Block> by viewModel.blocks.observeAsState(emptyList())
-    val openState : List<Boolean> by viewModel.openState.observeAsState(emptyList())
-
-    TopLevelBlocks(blocks, openState, viewModel)
+    TopLevelBlocks(viewModel.blocks.value, viewModel.openState.value, viewModel.selectedBlock.value, viewModel)
 }
 
 @Composable
-fun TopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, viewModel: MdViewModel){
-    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-        blocks.forEachIndexed { index, block ->
-            key(block.id) {
-                TopLevelBlock(block, openState[index], { viewModel.parseBlock(it) },
-                    onBlockChange = {id, newSrc ->
-                        viewModel.updateBlock(id, newSrc)
-                    },
-                    onOpen = {open ->
-                        viewModel.updateOpenState(index, open)
-                    }
-                )
-                Spacer(modifier = Modifier.size(5.dp))
+fun TopLevelBlocks(blocks: List<Block>, openState: List<Boolean>, selectedBlock: Block, viewModel: MdViewModel){
+    var textState by remember { mutableStateOf(selectedBlock.src) }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.verticalScroll(rememberScrollState()).weight(1f)) {
+            blocks.forEachIndexed { index, block ->
+                key(block.id) {
+                    TopLevelBlock(block, openState[index], { viewModel.parseBlock(it) },
+                        onOpen = { open ->
+                            viewModel.updateOpenState(index, open)
+                            textState = viewModel.selectedBlock.value.src
+                        }
+                    )
+                    Spacer(modifier = Modifier.size(5.dp))
+                }
             }
         }
-        if (openState.all{ !it }) {
-            BlockEditBox(
-                Block(-1, ""),
-                {newSrc->
-                    viewModel.appendTailBlocks(newSrc)
-                },
-                null)
-        }
+        BlockEditBox(
+            selectedBlock,
+            textState,
+            {newText -> textState = newText},
+            {
+                if(selectedBlock.isEmpty)
+                    viewModel.appendTailBlocks(textState)
+                else
+                    viewModel.updateBlock(selectedBlock.id, textState)
+
+                textState = ""
+            },
+             {
+                 viewModel.updateOpenState(selectedBlock.id, false)
+                 textState = ""
+             }
+            )
     }
 }
 
 
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun ColumnScope.BlockEditBox(block: Block, onSubmit: (newSrc: String) -> Unit, onCancel: (()-> Unit)?) {
-    var textState by remember { mutableStateOf(block.src) }
-    val isFocus = onCancel != null
-    val requester = FocusRequester()
-    val relocationRequester = remember { RelocationRequester() }
-    val scope = rememberCoroutineScope()
-
+fun ColumnScope.BlockEditBox(block: Block, editing: String, onEditing: (String)->Unit, onSubmit: () -> Unit, onCancel: (()-> Unit)) {
+    val submitLabel = if(block.isEmpty) "Add" else "Submit"
     TextField(
-        value = textState,
-        onValueChange = {
-            textState = it
-            relocationRequester.bringIntoView()
-        },
-        modifier=Modifier.fillMaxWidth().relocationRequester(relocationRequester)
-            .focusRequester(requester)
-            .onFocusChanged {
-                if ("$it" == "Active") {
-                    scope.launch {
-                        delay(300)
-                        relocationRequester.bringIntoView()
-                    }
-                }
-            }
+        value = editing,
+        onValueChange = onEditing,
+        modifier=Modifier.fillMaxWidth()
     )
-    Row(modifier=Modifier.align(Alignment.End)) {
-        onCancel?.let {
+    Row(modifier=Modifier.align(Alignment.End).navigationBarsWithImePadding()) {
+        if(!block.isEmpty) {
             Button(onClick = {
-                it()
+                onCancel()
             }) {
                 Text("Cancel")
             }
         }
         Button(onClick = {
-            onSubmit(textState)
-            textState = ""
+            onSubmit()
         }) {
-            Text("Submit")
-        }
-    }
-    if (isFocus) {
-        SideEffect {
-            requester.requestFocus()
+            Text(submitLabel)
         }
     }
 }
 
 @Composable
-fun TopLevelBlock(block: Block, isOpen: Boolean, parseFun: (block:String)->ASTNode,
-                  onBlockChange: (id: Int, newSrc: String) -> Unit, onOpen: (open: Boolean)-> Unit) {
+fun TopLevelBlock(block: Block, isOpen: Boolean,
+                  parseFun: (block:String)->ASTNode,
+                  onOpen: (open: Boolean)-> Unit) {
     if (block.src == "\n")
         return
     val node = parseFun(block.src)
-    val ctx = RenderContext(block, onBlockChange)
+    val ctx = RenderContext(block)
     // draw bounding box and call onOpen
     if (isOpen) {
-        Column(modifier=Modifier.fillMaxWidth()) {
-            Box(modifier=Modifier.background(Teal200).fillMaxWidth()) {
-                MdBlock(ctx, node, true)
-            }
-
-            BlockEditBox(block, { onBlockChange(block.id, it) }, { onOpen(false) } )
+        Box(modifier=Modifier.background(Teal200).fillMaxWidth()) {
+            MdBlock(ctx, node, true)
         }
     } else {
         Box(modifier=Modifier.clickable { onOpen(true) }) {
