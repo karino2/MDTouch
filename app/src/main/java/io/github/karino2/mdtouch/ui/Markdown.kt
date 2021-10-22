@@ -32,7 +32,7 @@ import org.intellij.markdown.flavours.gfm.GFMElementTypes
 
 // src is topLevelBlock.
 data class RenderContext(val block: Block) {
-    val src : String
+    val src: String
         get() = block.src
 }
 
@@ -44,7 +44,7 @@ fun MdPanel(viewModel: MdViewModel){
 @Composable
 fun TopLevelBlocks(blocks: List<Block>, selectedBlock: Block, viewModel: MdViewModel){
     var textState by remember { mutableStateOf(selectedBlock.src) }
-    val scrollState  = rememberScrollState()
+    val scrollState = rememberScrollState()
     val cscope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -67,10 +67,10 @@ fun TopLevelBlocks(blocks: List<Block>, selectedBlock: Block, viewModel: MdViewM
             {newText -> textState = newText},
             {
                 if(selectedBlock.isEmpty) {
-                    viewModel.appendTailBlocks(textState)
-                    cscope.launch {
-                        scrollState.animateScrollTo(scrollState.maxValue)
-                    }
+                viewModel.appendTailBlocks(textState)
+                cscope.launch {
+                    scrollState.animateScrollTo(scrollState.maxValue)
+                }
                 }
                 else
                     viewModel.updateBlock(selectedBlock.id, textState)
@@ -79,9 +79,9 @@ fun TopLevelBlocks(blocks: List<Block>, selectedBlock: Block, viewModel: MdViewM
             },
              {
                  viewModel.updateSelectionState(selectedBlock.id, false)
-                 textState = ""
-             }
-            )
+                textState = ""
+            }
+        )
     }
 }
 
@@ -93,9 +93,9 @@ fun ColumnScope.BlockEditBox(block: Block, editing: String, onEditing: (String)-
     TextField(
         value = editing,
         onValueChange = onEditing,
-        modifier=Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth()
     )
-    Row(modifier=Modifier.align(Alignment.End).navigationBarsWithImePadding()) {
+    Row(modifier = Modifier.align(Alignment.End).navigationBarsWithImePadding()) {
         if(!block.isEmpty) {
             Button(onClick = {
                 onCancel()
@@ -112,17 +112,20 @@ fun ColumnScope.BlockEditBox(block: Block, editing: String, onEditing: (String)-
 }
 
 @Composable
-fun TopLevelBlock(block: Block, isSelected: Boolean,
-                  parseFun: (block:String)->ASTNode,
-                  onSelect: (isSelect: Boolean)-> Unit) {
+fun TopLevelBlock(
+    block: Block, isSelected: Boolean,
+    parseFun: (block: String) -> ASTNode,
+    onSelect: (isSelect: Boolean) -> Unit
+) {
     if (block.src == "\n")
         return
     val node = parseFun(block.src)
     val ctx = RenderContext(block)
 
     // draw bounding box and call onSelect
-    val boxModifier = if(isSelected) Modifier.background(Teal200).fillMaxWidth() else Modifier.clickable { onSelect(true) }
-    Box(modifier=boxModifier) {
+    val boxModifier = if (isSelected) Modifier.background(Teal200)
+        .fillMaxWidth() else Modifier.clickable { onSelect(true) }
+    Box(modifier = boxModifier) {
         MdBlock(ctx, node, true)
     }
 }
@@ -134,8 +137,12 @@ fun MdBlocks(ctx: RenderContext, blocks: CompositeASTNode, isTopLevel: Boolean =
 
 
 @Composable
-fun AnnotatedBox(content: AnnotatedString, paddingBottom: Dp, style: TextStyle = LocalTextStyle.current) {
-    Box(Modifier.padding(bottom=paddingBottom)) { Text(content,  style=style) }
+fun AnnotatedBox(
+    content: AnnotatedString,
+    paddingBottom: Dp,
+    style: TextStyle = LocalTextStyle.current
+) {
+    Box(Modifier.padding(bottom = paddingBottom)) { Text(content, style = style) }
 }
 
 
@@ -146,8 +153,8 @@ fun Heading(ctx: RenderContext, block: CompositeASTNode, style: TextStyle) {
     }, 0.dp, style)
 }
 
-fun AnnotatedString.Builder.appendHeadingContent(md: String, node : ASTNode, colors: Colors){
-    when(node.type) {
+fun AnnotatedString.Builder.appendHeadingContent(md: String, node: ASTNode, colors: Colors) {
+    when (node.type) {
         MarkdownTokenTypes.ATX_CONTENT -> {
             appendTrimmingInline(md, node, colors)
             return
@@ -159,7 +166,7 @@ fun AnnotatedString.Builder.appendHeadingContent(md: String, node : ASTNode, col
     }
 }
 
-fun selectTrimmingInline(node: ASTNode) : List<ASTNode> {
+fun selectTrimmingInline(node: ASTNode): List<ASTNode> {
     val children = node.children
     var from = 0
     while (from < children.size && children[from].type == MarkdownTokenTypes.WHITE_SPACE) {
@@ -174,20 +181,28 @@ fun selectTrimmingInline(node: ASTNode) : List<ASTNode> {
 }
 
 
-fun AnnotatedString.Builder.withStyle(style: SpanStyle, builder: AnnotatedString.Builder.()->Unit) {
+fun AnnotatedString.Builder.withStyle(
+    style: SpanStyle,
+    builder: AnnotatedString.Builder.() -> Unit
+) {
     pushStyle(style)
     this.builder()
     pop()
 }
 
-fun AnnotatedString.Builder.appendInline(md: String, node : ASTNode, childrenSelector : (ASTNode)->List<ASTNode>, colors: Colors){
+fun AnnotatedString.Builder.appendInline(
+    md: String,
+    node: ASTNode,
+    childrenSelector: (ASTNode) -> List<ASTNode>,
+    colors: Colors
+) {
     val targets = childrenSelector(node)
-    targets.forEachIndexed { index, child->
-        if(child is LeafASTNode) {
-            when(child.type) {
+    targets.forEachIndexed { index, child ->
+        if (child is LeafASTNode) {
+            when (child.type) {
                 MarkdownTokenTypes.EOL -> {
                     // treat as space, except the case of BR EOL
-                    if (index != 0 && targets[index-1].type !=MarkdownTokenTypes.HARD_LINE_BREAK)
+                    if (index != 0 && targets[index - 1].type != MarkdownTokenTypes.HARD_LINE_BREAK)
                         append(" ")
                 }
                 MarkdownTokenTypes.HARD_LINE_BREAK -> append("\n")
@@ -195,31 +210,46 @@ fun AnnotatedString.Builder.appendInline(md: String, node : ASTNode, childrenSel
             }
 
         } else {
-            when(child.type) {
+            when (child.type) {
                 MarkdownElementTypes.CODE_SPAN -> {
                     // val bgcolor = Color(0xFFF5F5F5)
-                    val bgcolor =  Color.LightGray
-                    pushStyle(SpanStyle(color= Color.Red, background = bgcolor))
-                    child.children.subList(1, child.children.size-1).forEach { item->
+                    val bgcolor = Color.LightGray
+                    pushStyle(SpanStyle(color = Color.Red, background = bgcolor))
+                    child.children.subList(1, child.children.size - 1).forEach { item ->
                         append(item.getTextInNode(md).toString())
                     }
                     pop()
                 }
                 MarkdownElementTypes.STRONG -> {
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        appendInline(md, child, {parent-> parent.children.subList(2, parent.children.size-2)}, colors)
+                        appendInline(
+                            md,
+                            child,
+                            { parent -> parent.children.subList(2, parent.children.size - 2) },
+                            colors
+                        )
                     }
                 }
                 MarkdownElementTypes.EMPH -> {
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        appendInline(md, child, {parent-> parent.children.subList(1, parent.children.size-1)}, colors)
+                        appendInline(
+                            md,
+                            child,
+                            { parent -> parent.children.subList(1, parent.children.size - 1) },
+                            colors
+                        )
                     }
                 }
                 MarkdownElementTypes.INLINE_LINK -> {
-                    withStyle(SpanStyle(colors.primary, textDecoration = TextDecoration.Underline)) {
-                        child.children.filter {it.type == MarkdownElementTypes.LINK_TEXT}
+                    withStyle(
+                        SpanStyle(
+                            colors.primary,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    ) {
+                        child.children.filter { it.type == MarkdownElementTypes.LINK_TEXT }
                             .forEach { linktext ->
-                                linktext.children.subList(1, linktext.children.size-1).forEach {
+                                linktext.children.subList(1, linktext.children.size - 1).forEach {
                                     append(it.getTextInNode(md).toString())
                                 }
                             }
@@ -227,7 +257,12 @@ fun AnnotatedString.Builder.appendInline(md: String, node : ASTNode, childrenSel
                 }
                 GFMElementTypes.STRIKETHROUGH -> {
                     withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
-                        appendInline(md, child, {parent-> parent.children.subList(2, parent.children.size-2)}, colors)
+                        appendInline(
+                            md,
+                            child,
+                            { parent -> parent.children.subList(2, parent.children.size - 2) },
+                            colors
+                        )
                     }
                 }
                 GFMWithWikiFlavourDescriptor.WIKI_LINK -> {
@@ -235,7 +270,12 @@ fun AnnotatedString.Builder.appendInline(md: String, node : ASTNode, childrenSel
                     assert(child.children.size == 5)
 
                     // Render [[WikiName]] as [[WikiName]] with link like decoration.
-                    withStyle(SpanStyle(colors.primary, textDecoration = TextDecoration.Underline)) {
+                    withStyle(
+                        SpanStyle(
+                            colors.primary,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    ) {
                         append(child.getTextInNode(md).toString())
                     }
 
@@ -246,14 +286,14 @@ fun AnnotatedString.Builder.appendInline(md: String, node : ASTNode, childrenSel
     }
 }
 
-fun AnnotatedString.Builder.appendTrimmingInline(md: String, node : ASTNode, colors: Colors){
+fun AnnotatedString.Builder.appendTrimmingInline(md: String, node: ASTNode, colors: Colors) {
     appendInline(md, node, ::selectTrimmingInline, colors)
 }
 
 
 @Composable
 fun MdBlock(ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) {
-    when(block.type) {
+    when (block.type) {
         MarkdownElementTypes.ATX_1 -> {
             Heading(ctx, block as CompositeASTNode, MaterialTheme.typography.h3)
         }
@@ -290,8 +330,12 @@ fun MdBlock(ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) {
 
         MarkdownTokenTypes.HORIZONTAL_RULE -> {
             // for click target.
-            Box(modifier=Modifier.height(10.dp)) {
-                Divider(modifier=Modifier.align(Alignment.Center) , color=Color.DarkGray, thickness = 2.dp)
+            Box(modifier = Modifier.height(10.dp)) {
+                Divider(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color.DarkGray,
+                    thickness = 2.dp
+                )
             }
         }
     }
@@ -301,9 +345,11 @@ fun MdBlock(ctx: RenderContext, block: ASTNode, isTopLevel: Boolean) {
 // similar to CodeFenceGeneratingProvider at GeneratingProviders.kt
 @Composable
 fun CodeFence(md: String, node: ASTNode) {
-    Column (modifier = Modifier
-        .background(Color.LightGray)
-        .padding(8.dp)) {
+    Column(
+        modifier = Modifier
+            .background(Color.LightGray)
+            .padding(8.dp)
+    ) {
         val codeStyle = TextStyle(fontFamily = FontFamily.Monospace)
         val builder = StringBuilder()
 
@@ -318,17 +364,17 @@ fun CodeFence(md: String, node: ASTNode) {
         for (child in childrenToConsider) {
             if (!renderStart && child.type == MarkdownTokenTypes.EOL) {
                 renderStart = true
-            }
-            else
-            {
-                when(child.type) {
+            } else {
+                when (child.type) {
                     MarkdownTokenTypes.CODE_FENCE_CONTENT -> {
                         builder.append(child.getTextInNode(md))
                         lastChildWasContent = true
                     }
                     MarkdownTokenTypes.EOL -> {
-                        Text(style=codeStyle,
-                            text = builder.toString())
+                        Text(
+                            style = codeStyle,
+                            text = builder.toString()
+                        )
                         builder.clear()
                         lastChildWasContent = false
                     }
@@ -337,8 +383,10 @@ fun CodeFence(md: String, node: ASTNode) {
             }
         }
         if (lastChildWasContent) {
-            Text(style=codeStyle,
-                text = builder.toString())
+            Text(
+                style = codeStyle,
+                text = builder.toString()
+            )
         }
 
     }
@@ -350,23 +398,27 @@ inline fun MdListColumn(
     isTopLevel: Boolean,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column (
+    Column(
         Modifier
             .offset(x = if (isTopLevel) 5.dp else 10.dp)
-            .padding(bottom = if (isTopLevel) 5.dp else 0.dp)) { content() }
+            .padding(bottom = if (isTopLevel) 5.dp else 0.dp)
+    ) { content() }
 }
 
 @Composable
-fun MdUnorderedList(ctx:RenderContext, list: ListCompositeNode, isTopLevel: Boolean) {
+fun MdUnorderedList(ctx: RenderContext, list: ListCompositeNode, isTopLevel: Boolean) {
     MdListColumn(isTopLevel) {
-        list.children.forEach { item->
+        list.children.forEach { item ->
             if (item.type == MarkdownElementTypes.LIST_ITEM) {
                 Row {
-                    Canvas(modifier = Modifier
-                        .size(10.dp)
-                        .offset(y = 7.dp)
-                        .padding(end = 5.dp)) {
-                        drawCircle(radius=size.width/2, center=center, color= Color.Black) }
+                    Canvas(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .offset(y = 7.dp)
+                            .padding(end = 5.dp)
+                    ) {
+                        drawCircle(radius = size.width / 2, center = center, color = Color.Black)
+                    }
                     Box {
                         Column {
                             MdBlocks(ctx, item as CompositeASTNode)
@@ -381,31 +433,28 @@ fun MdUnorderedList(ctx:RenderContext, list: ListCompositeNode, isTopLevel: Bool
 }
 
 @Composable
-fun MdOrderedList(ctx:RenderContext, list: ListCompositeNode, isTopLevel: Boolean) {
-    MdListColumn(isTopLevel){
+fun MdOrderedList(ctx: RenderContext, list: ListCompositeNode, isTopLevel: Boolean) {
+    MdListColumn(isTopLevel) {
         val items = list.children
             .filter { it.type == MarkdownElementTypes.LIST_ITEM }
 
         val heads = items.runningFold(0) { aggr, item ->
-            if (aggr == 0)
-            {
+            if (aggr == 0) {
                 item.findChildOfType(MarkdownTokenTypes.LIST_NUMBER)
                     ?.getTextInNode(ctx.src)?.toString()?.trim()?.let {
                         val number = it.substring(0, it.length - 1).trimStart('0')
                         if (number.isEmpty()) 0 else number.toInt()
                     } ?: 1
-            }
-            else
-            {
-                aggr+1
+            } else {
+                aggr + 1
             }
         }.drop(1)
 
         heads.zip(items)
-            .forEach {(head, item) ->
+            .forEach { (head, item) ->
                 val mark = "${head}."
                 Row {
-                    Box(Modifier.padding(end=5.dp)) {
+                    Box(Modifier.padding(end = 5.dp)) {
                         Text(mark)
                     }
                     Box {
