@@ -22,6 +22,7 @@ import io.github.karino2.mdtouch.Block
 import io.github.karino2.mdtouch.GFMWithWikiFlavourDescriptor
 import io.github.karino2.mdtouch.MdViewModel
 import io.github.karino2.mdtouch.ui.theme.Teal200
+import kotlinx.coroutines.launch
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
 import org.intellij.markdown.ast.*
@@ -43,9 +44,11 @@ fun MdPanel(viewModel: MdViewModel){
 @Composable
 fun TopLevelBlocks(blocks: List<Block>, selectedBlock: Block, viewModel: MdViewModel){
     var textState by remember { mutableStateOf(selectedBlock.src) }
+    val scrollState  = rememberScrollState()
+    val cscope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState()).weight(1f)) {
+        Column(modifier = Modifier.verticalScroll(scrollState).weight(1f)) {
             blocks.forEachIndexed { index, block ->
                 key(block.id) {
                     TopLevelBlock(block, block == selectedBlock, { viewModel.parseBlock(it) },
@@ -63,8 +66,12 @@ fun TopLevelBlocks(blocks: List<Block>, selectedBlock: Block, viewModel: MdViewM
             textState,
             {newText -> textState = newText},
             {
-                if(selectedBlock.isEmpty)
+                if(selectedBlock.isEmpty) {
                     viewModel.appendTailBlocks(textState)
+                    cscope.launch {
+                        scrollState.animateScrollTo(scrollState.maxValue)
+                    }
+                }
                 else
                     viewModel.updateBlock(selectedBlock.id, textState)
 
