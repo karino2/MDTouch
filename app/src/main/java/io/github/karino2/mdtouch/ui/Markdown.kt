@@ -37,21 +37,18 @@ data class RenderContext(val block: Block) {
 }
 
 @Composable
-fun MdPanel(viewModel: MdViewModel){
-    TopLevelBlocks(viewModel.blocks.value, viewModel.selectedBlock.value, viewModel)
-}
-
-@Composable
-fun TopLevelBlocks(blocks: List<Block>, selectedBlock: Block, viewModel: MdViewModel){
-    var textState by remember { mutableStateOf(selectedBlock.src) }
+fun MdEditor(viewModel: MdViewModel) {
+    var textState by remember { mutableStateOf(viewModel.selectedBlock.value.src) }
     val scrollState = rememberScrollState()
     val cscope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.verticalScroll(scrollState).weight(1f)) {
-            blocks.forEachIndexed { index, block ->
+            viewModel.blocks.value.forEachIndexed { index, block ->
                 key(block.id) {
-                    TopLevelBlock(block, block == selectedBlock, { viewModel.parseBlock(it) },
+                    TopLevelBlock(block,
+                        block == viewModel.selectedBlock.value,
+                        { viewModel.parseBlock(it) },
                         onSelect = { newSelect ->
                             viewModel.updateSelectionState(index, newSelect)
                             textState = viewModel.selectedBlock.value.src
@@ -62,23 +59,22 @@ fun TopLevelBlocks(blocks: List<Block>, selectedBlock: Block, viewModel: MdViewM
             }
         }
         BlockEditBox(
-            selectedBlock,
+            viewModel.selectedBlock.value,
             textState,
-            {newText -> textState = newText},
-            {
-                if(selectedBlock.isEmpty) {
+            onEditing = { newText -> textState = newText },
+            onSubmitNewBlock = {
                 viewModel.appendTailBlocks(textState)
                 cscope.launch {
                     scrollState.animateScrollTo(scrollState.maxValue)
                 }
-                }
-                else
-                    viewModel.updateBlock(selectedBlock.id, textState)
-
                 textState = ""
             },
-             {
-                 viewModel.updateSelectionState(selectedBlock.id, false)
+            onSubmitEditBlock = { blockId ->
+                viewModel.updateBlock(blockId, textState)
+                textState = ""
+            },
+            onCancelEdit = { blockId->
+                viewModel.updateSelectionState(blockId, false)
                 textState = ""
             }
         )
@@ -86,25 +82,36 @@ fun TopLevelBlocks(blocks: List<Block>, selectedBlock: Block, viewModel: MdViewM
 }
 
 
-
 @Composable
-fun ColumnScope.BlockEditBox(block: Block, editing: String, onEditing: (String)->Unit, onSubmit: () -> Unit, onCancel: (()-> Unit)) {
-    val submitLabel = if(block.isEmpty) "Add" else "Submit"
+fun ColumnScope.BlockEditBox(
+    block: Block,
+    editingText: String,
+    onEditing: (String) -> Unit,
+    onSubmitNewBlock: () -> Unit,
+    onSubmitEditBlock: (blockId: Int) -> Unit,
+    onCancelEdit: (blockId: Int) -> Unit
+) {
+    val forAppend = block.isEmpty
+    val submitLabel = if (forAppend) "Add" else "Submit"
     TextField(
-        value = editing,
+        value = editingText,
         onValueChange = onEditing,
         modifier = Modifier.fillMaxWidth()
     )
     Row(modifier = Modifier.align(Alignment.End).navigationBarsWithImePadding()) {
-        if(!block.isEmpty) {
+        if (!forAppend) {
             Button(onClick = {
-                onCancel()
+                onCancelEdit(block.id)
             }) {
                 Text("Cancel")
             }
         }
         Button(onClick = {
-            onSubmit()
+            if (forAppend) {
+                onSubmitNewBlock()
+            } else {
+                onSubmitEditBlock(block.id)
+            }
         }) {
             Text(submitLabel)
         }

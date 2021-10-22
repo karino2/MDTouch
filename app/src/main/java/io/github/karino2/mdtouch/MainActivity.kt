@@ -5,13 +5,12 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import androidx.activity.ComponentActivity
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import io.github.karino2.mdtouch.ui.MdPanel
+import io.github.karino2.mdtouch.ui.MdEditor
 import io.github.karino2.mdtouch.ui.theme.MDTouchTheme
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -108,7 +107,7 @@ class MainActivity : ComponentActivity() {
             MDTouchTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
-                    MdPanel(viewModel)
+                    MdEditor(viewModel)
                 }
             }
         }
