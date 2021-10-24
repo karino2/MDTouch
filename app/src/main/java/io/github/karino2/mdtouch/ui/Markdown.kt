@@ -203,6 +203,7 @@ fun ColumnScope.EditBlockBox(
             }) {
                 Text("Cancel")
             }
+            Spacer(modifier = Modifier.size(10.dp))
         }
         Button(onClick = {
             if (forAppend) {
