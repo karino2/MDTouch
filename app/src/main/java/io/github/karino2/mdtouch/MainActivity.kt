@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -26,14 +25,7 @@ class MainActivity : ComponentActivity() {
 
 
     fun getUrl(intent: Intent?, state: Bundle?) : Uri? {
-        return intent?.let {
-            if (it.action == Intent.ACTION_VIEW ||
-                    it.action == Intent.ACTION_EDIT) {
-                it.data
-            }
-            else
-                null
-        } ?: state?.url
+        return intent?.data ?: state?.url
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -43,15 +35,6 @@ class MainActivity : ComponentActivity() {
 
     private var _url : Uri? = null
 
-    val getFileUrl = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result->
-        if(result.resultCode == RESULT_OK) {
-            tryOpenUrl(result.data?.data)
-        }
-    }
-
-    fun gotoFileChooser() {
-        Intent(this, FileChooserActivity::class.java).also { getFileUrl.launch(it) }
-    }
 
     val viewModel: MdViewModel by viewModels()
 
@@ -107,12 +90,10 @@ class MainActivity : ComponentActivity() {
             MDTouchTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
-                    MdEditor(viewModel)
+                    MdEditor(viewModel, onClose = { finish() })
                 }
             }
         }
-
-        if(_url == null) gotoFileChooser()
     }
 }
 

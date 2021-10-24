@@ -7,10 +7,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -28,14 +28,12 @@ class FileChooserActivity : ComponentActivity() {
         }
 
         contentResolver.takePersistableUriPermission(url, Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        setResult(RESULT_OK, Intent().apply { data = url} )
-        finish()
+        Intent(this, MainActivity::class.java).apply { data = url} .also { startActivity(it) }
     }
 
     val openFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) {url ->
         contentResolver.takePersistableUriPermission(url, Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        setResult(RESULT_OK, Intent().apply { data = url} )
-        finish()
+        Intent(this, MainActivity::class.java).apply { data = url} .also { startActivity(it) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +50,11 @@ class FileChooserActivity : ComponentActivity() {
                             Button(onClick={
                                 getNewFile.launch("")
                             }, modifier = Modifier.align(Alignment.Center)) {
-                                Text("New File")
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Filled.Add, contentDescription = "New")
+                                    Spacer(modifier = Modifier.size(10.dp))
+                                    Text("New File")
+                                }
                             }
 
                         }
@@ -61,7 +63,11 @@ class FileChooserActivity : ComponentActivity() {
                             Button(onClick = {
                                 openFile.launch(arrayOf("text/*"))
                             },  modifier = Modifier.align(Alignment.Center)) {
-                                Text("Open File")
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Filled.Edit, contentDescription = "Open")
+                                    Spacer(modifier = Modifier.size(10.dp))
+                                    Text("Open File")
+                                }
                             }
                         }
                     }
