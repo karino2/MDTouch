@@ -19,21 +19,25 @@ import java.io.FileOutputStream
 
 class FileChooserActivity : ComponentActivity() {
 
-    val getNewFile = registerForActivityResult(ActivityResultContracts.CreateDocument()) {url->
-        contentResolver.openFileDescriptor(url, "w")!!.use {desc->
-            val fos = FileOutputStream(desc.fileDescriptor)
-            fos.use {
-                it.write("# Hello\n\n".toByteArray())
+    val getNewFile = registerForActivityResult(ActivityResultContracts.CreateDocument()) {url1->
+        url1?.let { url->
+            contentResolver.openFileDescriptor(url, "w")!!.use {desc->
+                val fos = FileOutputStream(desc.fileDescriptor)
+                fos.use {
+                    it.write("# Hello\n\n".toByteArray())
+                }
             }
-        }
 
-        contentResolver.takePersistableUriPermission(url, Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        Intent(this, MainActivity::class.java).apply { data = url} .also { startActivity(it) }
+            contentResolver.takePersistableUriPermission(url, Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            Intent(this, MainActivity::class.java).apply { data = url} .also { startActivity(it) }
+        }
     }
 
-    val openFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) {url ->
-        contentResolver.takePersistableUriPermission(url, Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        Intent(this, MainActivity::class.java).apply { data = url} .also { startActivity(it) }
+    val openFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) {url1 ->
+        url1?.let { url->
+            contentResolver.takePersistableUriPermission(url, Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            Intent(this, MainActivity::class.java).apply { data = url} .also { startActivity(it) }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
