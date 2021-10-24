@@ -82,15 +82,18 @@ class MainActivity : ComponentActivity() {
         _url?.let { tryOpenUrl(it) }
 
         viewModel.notifySaveState.observe(this) {_ ->
-            viewModel.blocks.value.joinToString("") { it.src }
-                    .also { saveMd(it) }
+            saveMd(viewModel.fullSrc)
         }
 
         setContent {
             MDTouchTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
-                    MdEditor(viewModel, onClose = { finish() })
+                    MdEditor(viewModel, onClose = { finish() }, onFullSrcSave = {
+                        saveMd(it)
+                        viewModel.openMd(it)
+                        viewModel.isBlockEdit.value = true
+                    })
                 }
             }
         }

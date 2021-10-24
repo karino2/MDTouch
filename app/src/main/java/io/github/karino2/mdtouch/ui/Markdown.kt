@@ -15,6 +15,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -30,6 +31,7 @@ import com.google.accompanist.insets.navigationBarsWithImePadding
 import io.github.karino2.mdtouch.Block
 import io.github.karino2.mdtouch.GFMWithWikiFlavourDescriptor
 import io.github.karino2.mdtouch.MdViewModel
+import io.github.karino2.mdtouch.R
 import io.github.karino2.mdtouch.ui.theme.Teal200
 import kotlinx.coroutines.launch
 import org.intellij.markdown.MarkdownElementTypes
@@ -49,8 +51,45 @@ data class RenderContext(val block: Block) {
 
 
 @Composable
-fun MdEditor(viewModel: MdViewModel, onClose: ()->Unit) {
+fun MdEditor(viewModel: MdViewModel, onClose: ()->Unit, onFullSrcSave: (String)->Unit) {
+    if (viewModel.isBlockEdit.value) {
+        MdBlockEdit(viewModel, onClose)
+    } else {
+        MdFullSrcEdit(viewModel, onFullSrcSave)
+    }
 
+}
+
+@Composable
+private fun MdFullSrcEdit(viewModel: MdViewModel, onSave: (String)->Unit) {
+    var text by remember { mutableStateOf(viewModel.fullSrc) }
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(onClick = { onSave(text) }) {
+                    Icon(painter = painterResource(id = R.drawable.outline_save), contentDescription = "Save")
+                }
+            }
+        },
+            navigationIcon = {
+                IconButton(onClick = { viewModel.isBlockEdit.value = true }) {
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                }
+            }
+        )
+        TextField(modifier = Modifier.fillMaxSize(), value = text, onValueChange = { text = it })
+    }
+}
+
+@Composable
+private fun MdBlockEdit(
+    viewModel: MdViewModel,
+    onClose: () -> Unit
+) {
     // https://developer.android.com/reference/kotlin/androidx/compose/ui/input/nestedscroll/package-summary
     // val toolbarHeight = 48.dp
     val toolbarHeight = 56.dp
@@ -71,9 +110,13 @@ fun MdEditor(viewModel: MdViewModel, onClose: ()->Unit) {
     val cscope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    Column(modifier = Modifier.fillMaxSize().nestedScroll(nestedScrollConnection)) {
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .nestedScroll(nestedScrollConnection)) {
         Box(modifier = Modifier.weight(1f)) {
-            Column(modifier = Modifier.verticalScroll(scrollState).padding(top=toolbarHeight)) {
+            Column(modifier = Modifier
+                .verticalScroll(scrollState)
+                .padding(top = toolbarHeight)) {
                 viewModel.blocks.value.forEachIndexed { index, block ->
                     key(block.id) {
                         TopLevelBlock(block,
@@ -95,9 +138,13 @@ fun MdEditor(viewModel: MdViewModel, onClose: ()->Unit) {
                     .offset { IntOffset(x = 0, y = toolbarOffsetHeightPx.value.roundToInt()) },
                 title = {
                     Text("MDTouch")
-                    Row(modifier=Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
-                        IconButton(onClick = {}) {
-                            Icon(Icons.Filled.Edit, contentDescription = "Edit")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        IconButton(onClick = { viewModel.isBlockEdit.value = false }) {
+                            Icon(painter = painterResource(id = R.drawable.outline_source), contentDescription = "Source")
                         }
                     }
                 },
@@ -109,7 +156,7 @@ fun MdEditor(viewModel: MdViewModel, onClose: ()->Unit) {
             )
 
         }
-        BlockEditBox(
+        EditBlockBox(
             viewModel.selectedBlock.value,
             textState,
             onEditing = { newText -> textState = newText },
@@ -124,7 +171,7 @@ fun MdEditor(viewModel: MdViewModel, onClose: ()->Unit) {
                 viewModel.updateBlock(blockId, textState)
                 textState = ""
             },
-            onCancelEdit = { blockId->
+            onCancelEdit = { blockId ->
                 viewModel.updateSelectionState(blockId, false)
                 textState = ""
             }
@@ -134,7 +181,7 @@ fun MdEditor(viewModel: MdViewModel, onClose: ()->Unit) {
 
 
 @Composable
-fun ColumnScope.BlockEditBox(
+fun ColumnScope.EditBlockBox(
     block: Block,
     editingText: String,
     onEditing: (String) -> Unit,

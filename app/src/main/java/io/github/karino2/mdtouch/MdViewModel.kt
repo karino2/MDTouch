@@ -8,7 +8,14 @@ import androidx.lifecycle.ViewModel
 class MdViewModel : ViewModel() {
     private val parser = Parser()
 
+    // block edit or full text area edit.
+    val isBlockEdit = mutableStateOf(true)
+
     val blocks = mutableStateOf(emptyList<Block>())
+
+    val fullSrc: String
+        get() = blocks.value.joinToString("") { it.src }
+
 
     private val _notifySaveState = MutableLiveData<Int>()
     val notifySaveState : LiveData<Int> = _notifySaveState
