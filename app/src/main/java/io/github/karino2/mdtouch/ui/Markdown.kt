@@ -191,29 +191,34 @@ fun ColumnScope.EditBlockBox(
 ) {
     val forAppend = block.isEmpty
     val submitLabel = if (forAppend) "Add" else "Submit"
-    TextField(
-        value = editingText,
-        onValueChange = onEditing,
-        modifier = Modifier.fillMaxWidth()
-    )
-    Row(modifier = Modifier.align(Alignment.End).navigationBarsWithImePadding()) {
-        if (!forAppend) {
+    val scrollState = rememberScrollState()
+
+    Column(modifier=Modifier.align(Alignment.End).verticalScroll(scrollState)) {
+        TextField(
+            value = editingText,
+            onValueChange = onEditing,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Row(modifier = Modifier.align(Alignment.End).navigationBarsWithImePadding()) {
+            if (!forAppend) {
+                Button(onClick = {
+                    onCancelEdit(block.id)
+                }) {
+                    Text("Cancel")
+                }
+                Spacer(modifier = Modifier.size(10.dp))
+            }
             Button(onClick = {
-                onCancelEdit(block.id)
+                if (forAppend) {
+                    onSubmitNewBlock()
+                } else {
+                    onSubmitEditBlock(block.id)
+                }
             }) {
-                Text("Cancel")
+                Text(submitLabel)
             }
-            Spacer(modifier = Modifier.size(10.dp))
         }
-        Button(onClick = {
-            if (forAppend) {
-                onSubmitNewBlock()
-            } else {
-                onSubmitEditBlock(block.id)
-            }
-        }) {
-            Text(submitLabel)
-        }
+
     }
 }
 
